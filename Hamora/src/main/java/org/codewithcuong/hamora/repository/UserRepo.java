@@ -37,6 +37,8 @@ public class UserRepo {
                 user.setEmail(rs.getString("email"));
                 user.setPassword(rs.getString("password_hash"));
                 user.setPhone(rs.getString("phone"));
+                user.setGender(rs.getString("gender"));
+                user.setDateOfBirth(rs.getDate("date_of_birth") != null ? rs.getDate("date_of_birth").toLocalDate() : null);
                 user.setRole(rs.getString("role"));
                 user.setActive(rs.getBoolean("is_active"));
                 return user;
@@ -74,6 +76,8 @@ public class UserRepo {
                 user.setEmail(rs.getString("email"));
                 user.setPassword(rs.getString("password_hash"));
                 user.setPhone(rs.getString("phone"));
+                user.setGender(rs.getString("gender"));
+                user.setDateOfBirth(rs.getDate("date_of_birth") != null ? rs.getDate("date_of_birth").toLocalDate() : null);
                 user.setRole(rs.getString("role"));
                 user.setActive(rs.getBoolean("is_active"));
                 return user;
