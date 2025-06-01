@@ -1,18 +1,25 @@
 package org.codewithcuong.hamora.controller;
 
-import org.codewithcuong.hamora.model.User;
-import org.codewithcuong.hamora.repository.UserRepo;
+import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.codewithcuong.hamora.model.User;
+import org.codewithcuong.hamora.repository.UserRepo;
+import org.codewithcuong.hamora.service.EmailService;
 
 @Controller
 public class RegisterController {
 
     @Autowired
     private UserRepo userRepo;
+
+    @Autowired
+    private EmailService emailService;
 
     private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
@@ -27,7 +34,8 @@ public class RegisterController {
             @RequestParam("password") String password,
             @RequestParam("confirmPassword") String confirmPassword,
             @RequestParam("fullname") String fullname,
-            Model model) {
+            Model model,
+            HttpSession session) {
 
 
         if (email.isEmpty() || password.isEmpty() || confirmPassword.isEmpty()) {
@@ -58,13 +66,15 @@ public class RegisterController {
             return "page/register";
         }
 
+        String otp = String.valueOf((int) (Math.random() * 900000) + 100000);
+        emailService.sendOtpEmail(email, otp);
+        userRepo.saveEmailOtpToken(email, otp);
+
         User user = new User(email, hashedPassword);
         user.setFullname(fullname);
-        userRepo.saveUser(user);
+        session.setAttribute("user", user);
 
-        model.addAttribute("email", email);
-        model.addAttribute("fullName", fullname);
+        return "page/verify-email-otp";
 
-        return "redirect:/login";
     }
 }

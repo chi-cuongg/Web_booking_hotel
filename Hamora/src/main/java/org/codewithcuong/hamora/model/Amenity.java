@@ -9,8 +9,11 @@ import lombok.NoArgsConstructor;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class Location {
-    private int id;
-    private String cityName;
-    private String imageUrl;
+public class Amenity {
+    private int amenityId;
+    private String name;
+    private int categoryId;
+
+    private int roomId;
+    private AmenityCategory category;  // Optional for JOIN
 }

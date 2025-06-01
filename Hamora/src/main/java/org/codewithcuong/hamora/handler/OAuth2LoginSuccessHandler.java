@@ -3,13 +3,13 @@ package org.codewithcuong.hamora.handler;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.codewithcuong.hamora.model.User;
-import org.codewithcuong.hamora.repository.UserRepo;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import org.springframework.stereotype.Component;
+import org.codewithcuong.hamora.model.User;
+import org.codewithcuong.hamora.repository.UserRepo;
 
 import java.io.IOException;
 
@@ -28,16 +28,30 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
         String email = oauthUser.getAttribute("email");
         String name = oauthUser.getAttribute("name");
 
-        User existingUser = userRepo.findByEmail(email);
-        if (existingUser == null) {
-            User newUser = new User();
-            newUser.setEmail(email);
-            newUser.setFullname(name);
-            userRepo.saveUserFromGoogle(newUser);
+        User user = userRepo.findByEmail(email);
+        if (user == null) {
+            user = new User();
+            user.setEmail(email);
+            user.setFullname(name);
+            user.setActive(true);
+            user.setRole("CUSTOMER");
+            userRepo.saveUserFromGoogle(user);
         }
-        request.getSession().setAttribute("email", email);
-        request.getSession().setAttribute("name", name);
 
-        response.sendRedirect("/");
+        if (!user.isActive()) {
+            response.sendRedirect("/login?error=inactive");
+            return;
+        }
+
+        request.getSession().setAttribute("user", user);
+
+        switch (user.getRole()) {
+            case "ADMIN", "MODERATOR" -> response.sendRedirect("/home");
+            case "HOTEL OWNER" -> response.sendRedirect("/home");
+            case "CUSTOMER", "GUEST" -> response.sendRedirect("/home");
+            default -> response.sendRedirect("/home");
+        }
+
     }
 }
+

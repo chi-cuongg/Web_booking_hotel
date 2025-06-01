@@ -1,19 +1,16 @@
 package org.codewithcuong.hamora.model;
 
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
-import java.time.LocalDate;
-
-
-@ToString
 @Builder
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-@Getter
-@Setter
 public class User {
-    private String id;
+    private int id;
     private String fullname;
     private String email;
     private String password;

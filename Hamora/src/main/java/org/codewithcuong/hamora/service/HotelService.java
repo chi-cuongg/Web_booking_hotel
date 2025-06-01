@@ -14,6 +14,10 @@ public class HotelService {
     @Autowired
     private HotelRepository hotelRepository;
 
+    public Hotel getHotelById(int id){
+        return hotelRepository.getHotelById(id);
+    }
+
     public List<Hotel> getHotelsSortedByRating() {
         return hotelRepository.getHotelsSortedByRating();
     }
@@ -25,5 +29,14 @@ public class HotelService {
     public List<Hotel> getHotelsByLocation(int id, String search) {
         if(id == -1) return hotelRepository.searchHotel(search);
         return hotelRepository.getHotelsByLocation(id, search);
-    }    
+    }
+
+    public Hotel saveHotel(Hotel hotel) {
+        return hotelRepository.insertHotel(hotel);
+    }
+
+    public List<Hotel> getHotelsByHostId(int hostId) {
+        return hotelRepository.findByHostId(hostId);
+    }
+
 }

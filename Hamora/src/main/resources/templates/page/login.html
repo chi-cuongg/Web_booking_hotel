@@ -95,12 +95,16 @@
                                     <p class="mb-0">New here? <a th:href="@{/register}">Create an account</a></p>
                                     <br>
                                     <div th:if="${param.error}" class="alert alert-danger">
-                                        Invalid email or password.
+                                            <span th:switch="${param.error[0]}">
+                                                <span th:case="'inactive'"> Your account has been deactivated. Please contact support.</span>
+                                                <span th:case="'true'"> Invalid email or password. Please try again.</span>
+                                            </span>
                                     </div>
 
                                     <!-- Form START -->
-                                    <form th:action="@{/login}" method="post" class="mt-4 text-start">
-                                        <!-- Email -->
+                                    <form id="login-form" th:action="@{/login}" method="post" class="mt-4 text-start">
+
+                                    <!-- Email -->
                                         <div class="mb-3">
                                             <label class="form-label">Enter email</label>
                                             <input type="email" name="username" class="form-control" required>
@@ -109,7 +113,7 @@
                                         <!-- Password -->
                                         <div class="mb-3 position-relative">
                                             <label class="form-label">Enter password</label>
-                                            <input type="password" name="password" class="form-control fakepassword" id="psw-input" minlength="8" required>
+                                            <input type="password" name="password" class="form-control fakepassword" id="psw-input" required>
                                             <span class="position-absolute top-50 end-0 translate-middle-y p-0 mt-3">
                                                 <i class="fakepasswordicon fas fa-eye-slash cursor-pointer p-2"></i>
                                             </span>
@@ -145,11 +149,6 @@
                                             </a>
                                         </div>
 
-                                        <!-- Footer -->
-                                        <div class="text-primary-hover text-body mt-3 text-center">
-                                            Copyrights ©2025 Booking. Build by
-                                            <a href="#" class="text-body">Cuong</a>.
-                                        </div>
                                     </form>
                                     <!-- Form END -->
 

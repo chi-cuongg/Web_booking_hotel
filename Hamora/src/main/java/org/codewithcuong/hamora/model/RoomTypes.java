@@ -9,8 +9,8 @@ import lombok.NoArgsConstructor;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class Location {
-    private int id;
-    private String cityName;
-    private String imageUrl;
+public class RoomTypes {
+    private int roomTypeId;
+    private String name;
+    private String description;
 }

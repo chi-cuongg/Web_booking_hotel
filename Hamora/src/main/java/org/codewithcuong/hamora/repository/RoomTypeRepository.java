@@ -1,0 +1,41 @@
+package org.codewithcuong.hamora.repository;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.jdbc.core.BeanPropertyRowMapper;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.stereotype.Repository;
+import org.codewithcuong.hamora.model.RoomTypes;
+
+import java.util.List;
+
+@Repository
+public class RoomTypeRepository {
+
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
+
+    public List<RoomTypes> getAllRoomTypes() {
+        String sql = """
+                    SELECT 
+                        room_type_id AS roomTypeId,
+                        name,
+                        description
+                    FROM RoomTypes
+                """;
+        return jdbcTemplate.query(sql, new BeanPropertyRowMapper<>(RoomTypes.class));
+    }
+
+    public RoomTypes getRoomTypeById(int roomTypeId) {
+        String sql = """
+                    SELECT 
+                        room_type_id AS roomTypeId,
+                        name,
+                        description
+                    FROM RoomTypes
+                    WHERE room_type_id = ?
+                """;
+        return jdbcTemplate.queryForObject(sql,
+                new BeanPropertyRowMapper<>(RoomTypes.class),
+                roomTypeId);
+    }
+}

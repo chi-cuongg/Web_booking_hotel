@@ -30,7 +30,8 @@ public class HomeController {
     public String home(Model model, HttpSession session) {
         model.addAttribute(ConstantVariables.PAGE_TITLE, "Hamora Booking");
         List<Location> locations = locationService.getAllLocations();
-        session.setAttribute("locations", locations);
+        session.setAttribute(ConstantVariables.LOCATIONS, locations);
+
 
         // Fetch top 4 high-rated hotels and add to model
         List<Hotel> topHotels = hotelService.getTop8HighRatedHotels();
@@ -40,11 +41,6 @@ public class HomeController {
         List<Review> top5Reviews = reviewService.getTop5PublicPositiveReviews();
         model.addAttribute("top5Reviews", top5Reviews);
 
-        String email = (String) session.getAttribute("email");
-        String name = (String) session.getAttribute("name");
-
-        model.addAttribute("email", email);
-        model.addAttribute("fullName", name);
 
         return "page/homepage";
     }

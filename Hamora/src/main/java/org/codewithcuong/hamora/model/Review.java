@@ -1,16 +1,16 @@
 package org.codewithcuong.hamora.model;
 
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 
-@ToString
 @Builder
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-@Getter
-@Setter
 public class Review {
     private int reviewId;           // review_id
     private int bookingId;          // booking_id
