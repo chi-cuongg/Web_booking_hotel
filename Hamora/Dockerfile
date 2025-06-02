@@ -4,6 +4,7 @@ FROM maven:3.9.6-eclipse-temurin-17
 # Tạo thư mục làm việc
 WORKDIR /app
 
+COPY pom.xml .
 # Copy toàn bộ mã nguồn vào container
 COPY . .
 
