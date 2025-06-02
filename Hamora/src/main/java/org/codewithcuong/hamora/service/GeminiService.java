@@ -1,0 +1,58 @@
+package org.codewithcuong.hamora.service;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import okhttp3.*;
+import org.springframework.stereotype.Service;
+
+import java.io.IOException;
+
+@Service
+public class GeminiService {
+
+    private static final String API_KEY = "AIzaSyAMNc7qDAZQA9m8gSMW8hN75AjPvdBfH8o";
+    private static final String ENDPOINT = "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=" + API_KEY;
+    private final OkHttpClient client = new OkHttpClient();
+    private final ObjectMapper mapper = new ObjectMapper();
+
+    public String generateReply(String userMessage) {
+        try {
+            String safeText = mapper.writeValueAsString(userMessage); // auto escape and add quotes
+
+            String jsonBody = """
+                {
+                  "contents": [{
+                    "parts": [{"text": %s}]
+                  }]
+                }
+                """.formatted(safeText);
+
+            Request request = new Request.Builder()
+                    .url(ENDPOINT)
+                    .post(RequestBody.create(jsonBody, MediaType.parse("application/json")))
+                    .addHeader("Content-Type", "application/json")
+                    .build();
+
+            try (Response response = client.newCall(request).execute()) {
+                if (!response.isSuccessful()) {
+                    return "Gemini API error: " + response.code();
+                }
+
+                String jsonResponse = response.body().string();
+                JsonNode root = mapper.readTree(jsonResponse);
+
+                return root.path("candidates")
+                        .get(0)
+                        .path("content")
+                        .path("parts")
+                        .get(0)
+                        .path("text")
+                        .asText();
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return "Lỗi gọi Gemini: " + e.getMessage();
+        }
+    }
+}
