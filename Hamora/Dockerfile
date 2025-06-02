@@ -1,14 +1,14 @@
-# Sử dụng JDK 17 chính thức
-FROM eclipse-temurin:17-jdk
+# Dùng image có sẵn Maven và JDK 17
+FROM maven:3.9.6-eclipse-temurin-17
 
-# Tạo thư mục chứa project
+# Tạo thư mục làm việc
 WORKDIR /app
 
-# Copy toàn bộ mã nguồn vào trong container
+# Copy toàn bộ mã nguồn vào container
 COPY . .
 
-# Build project bằng Maven wrapper (mvnw)
+# Build WAR file
 RUN mvn clean package -DskipTests
 
-# Chạy file WAR sau khi build (chỉnh đúng tên WAR)
+# Chạy WAR sau khi build
 CMD ["java", "-jar", "target/Hamora-0.0.1-SNAPSHOT.war"]

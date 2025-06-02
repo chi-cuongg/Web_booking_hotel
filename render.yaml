@@ -1,7 +1,0 @@
-services:
-  - type: web
-    name: hamora-springboot-app
-    env: java
-    rootDir: Hamora
-    buildCommand: "mvn clean install"
-    startCommand: "java -jar target/Hamora-0.0.1-SNAPSHOT.war"
