@@ -10,8 +10,8 @@ import java.io.IOException;
 @Service
 public class GeminiService {
 
-    private static final String API_KEY = "AIzaSyAMNc7qDAZQA9m8gSMW8hN75AjPvdBfH8o";
-    private static final String ENDPOINT = "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=" + API_KEY;
+    private static final String API_KEY = "AIzaSyAxYYP1gbXHU6becijvTxhXWBi9kPo8zHc";
+    private static final String ENDPOINT = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=" + API_KEY;
     private final OkHttpClient client = new OkHttpClient();
     private final ObjectMapper mapper = new ObjectMapper();
 

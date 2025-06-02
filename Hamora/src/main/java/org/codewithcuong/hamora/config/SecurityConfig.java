@@ -31,7 +31,7 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
                 .csrf(csrf -> csrf
-                        .ignoringRequestMatchers("/api/files/**") //  disable CSRF for file upload API, need for Postman
+                        .ignoringRequestMatchers("/api/files/**", "/webhook") // ✅ thêm webhook ở đây
                 )
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(
@@ -39,6 +39,7 @@ public class SecurityConfig {
                                 "/css/**", "/js/**", "/images/**", "/assets/**",
                                 "/api/files/**" //  Allow API access
                         ).permitAll()
+                        .requestMatchers("/webhook").permitAll()
                         .requestMatchers("/user-profile", "/update-user-profile").authenticated() // Chỉ cho phép người đã xác thực
                         .anyRequest().permitAll() // in dev mode
                 )
