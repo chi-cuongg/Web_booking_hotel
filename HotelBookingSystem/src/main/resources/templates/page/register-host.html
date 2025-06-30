@@ -1,0 +1,2297 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <title>Đăng Ký Khách Sạn Của Bạn - Booking</title>
+
+    <!-- Meta Tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="author" content="StackBros">
+    <meta name="description" content="Đăng ký khách sạn của bạn và bắt đầu cho thuê phòng trên Booking.">
+
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+          integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+          crossorigin=""/>
+
+    <!-- Dark mode -->
+    <script>
+        const storedTheme = localStorage.getItem('theme')
+
+        const getPreferredTheme = () => {
+            if (storedTheme) {
+                return storedTheme
+            }
+            return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
+        }
+
+        const setTheme = function (theme) {
+            if (theme === 'auto' && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+                document.documentElement.setAttribute('data-bs-theme', 'dark')
+            } else {
+                document.documentElement.setAttribute('data-bs-theme', theme)
+            }
+        }
+
+        setTheme(getPreferredTheme())
+
+        window.addEventListener('DOMContentLoaded', () => {
+            var el = document.querySelector('.theme-icon-active');
+            if (el != 'undefined' && el != null) {
+                const showActiveTheme = theme => {
+                    const activeThemeIcon = document.querySelector('.theme-icon-active use')
+                    const btnToActive = document.querySelector(`[data-bs-theme-value="${theme}"]`)
+                    const svgOfActiveBtn = btnToActive.querySelector('.mode-switch use').getAttribute('href')
+
+                    document.querySelectorAll('[data-bs-theme-value]').forEach(element => {
+                        element.classList.remove('active')
+                    })
+
+                    btnToActive.classList.add('active')
+                    activeThemeIcon.setAttribute('href', svgOfActiveBtn)
+                }
+
+                window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+                    if (storedTheme !== 'light' || storedTheme !== 'dark') {
+                        setTheme(getPreferredTheme())
+                    }
+                })
+
+                showActiveTheme(getPreferredTheme())
+
+                document.querySelectorAll('[data-bs-theme-value]')
+                    .forEach(toggle => {
+                        toggle.addEventListener('click', () => {
+                            const theme = toggle.getAttribute('data-bs-theme-value')
+                            localStorage.setItem('theme', theme)
+                            setTheme(theme)
+                            showActiveTheme(theme)
+                        })
+                    })
+
+            }
+        })
+
+    </script>
+
+    <!-- Favicon -->
+    <link rel="shortcut icon" href="assets/images/favicon.ico">
+
+    <!-- Google Font -->
+    <link rel="preconnect" href="https://fonts.googleapis.com/">
+    <link rel="preconnect" href="https://fonts.gstatic.com/" crossorigin>
+    <link rel="stylesheet"
+          href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Poppins:wght@400;500;700&display=swap">
+
+    <!-- Plugins CSS -->
+    <link rel="stylesheet" type="text/css" href="assets/vendor/font-awesome/css/all.min.css">
+    <link rel="stylesheet" type="text/css" href="assets/vendor/bootstrap-icons/bootstrap-icons.css">
+    <link rel="stylesheet" type="text/css" href="assets/vendor/choices/css/choices.min.css">
+    <link rel="stylesheet" type="text/css" href="assets/vendor/stepper/css/bs-stepper.min.css">
+    <link rel="stylesheet" type="text/css" href="assets/vendor/quill/css/quill.snow.css">
+    <link rel="stylesheet" type="text/css" href="assets/vendor/dropzone/css/dropzone.css">
+
+
+    <!-- Theme CSS -->
+    <link rel="stylesheet" type="text/css" href="assets/css/style.css">
+    <style>
+        /* Ensure map has a height */
+        #hotelLocationMap {
+            height: 350px; /* You can adjust this height */
+            width: 100%;
+            border: 1px solid #ddd;
+            border-radius: 0.25rem;
+        }
+
+        /* Corrected map container ID for styling if needed */
+        #interactiveHotelMap {
+            height: 300px; /* Or whatever height you set in the HTML */
+            width: 100%;
+            border: 1px solid #ddd;
+            border-radius: 0.25rem;
+        }
+
+        /* Enhanced form validation styles */
+        .form-control.is-invalid,
+        .form-select.is-invalid {
+            border-color: #dc3545;
+            box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25);
+        }
+
+        .form-control.is-valid,
+        .form-select.is-valid {
+            border-color: #198754;
+            box-shadow: 0 0 0 0.2rem rgba(25, 135, 84, 0.25);
+        }
+
+        .invalid-feedback {
+            display: block;
+            width: 100%;
+            margin-top: 0.25rem;
+            font-size: 0.875em;
+            color: #dc3545;
+            font-weight: 500;
+        }
+
+        .valid-feedback {
+            display: block;
+            width: 100%;
+            margin-top: 0.25rem;
+            font-size: 0.875em;
+            color: #198754;
+        }
+
+        /* Checkbox validation styling */
+        .form-check-input.is-invalid {
+            border-color: #dc3545;
+        }
+
+        .form-check-input.is-valid {
+            border-color: #198754;
+        }
+
+        /* File input validation styling */
+        .form-control[type="file"].is-invalid {
+            border-color: #dc3545;
+            background-color: rgba(220, 53, 69, 0.05);
+        }
+
+        .form-control[type="file"].is-valid {
+            border-color: #198754;
+            background-color: rgba(25, 135, 84, 0.05);
+        }
+
+        /* Validation for dropzone areas */
+        .dropzone.is-invalid {
+            border-color: #dc3545 !important;
+            background-color: rgba(220, 53, 69, 0.05);
+        }
+
+        .dropzone.is-valid {
+            border-color: #198754 !important;
+            background-color: rgba(25, 135, 84, 0.05);
+        }
+
+        /* Error animation */
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+            20%, 40%, 60%, 80% { transform: translateX(5px); }
+        }
+
+        .shake {
+            animation: shake 0.6s ease-in-out;
+        }
+
+        /* Required field indicator */
+        .required-indicator {
+            color: #dc3545;
+            font-weight: bold;
+        }
+
+        /* Focus highlight for invalid fields */
+        .focus-highlight {
+            box-shadow: 0 0 0 0.3rem rgba(220, 53, 69, 0.4) !important;
+            border-color: #dc3545 !important;
+            position: relative;
+        }
+
+        .focus-highlight::before {
+            content: '';
+            position: absolute;
+            top: -3px;
+            left: -3px;
+            right: -3px;
+            bottom: -3px;
+            background: linear-gradient(45deg, #dc3545, transparent, #dc3545);
+            border-radius: 6px;
+            z-index: -1;
+            animation: pulse-border 2s infinite;
+        }
+
+        @keyframes pulse-border {
+            0%, 100% { opacity: 0.7; }
+            50% { opacity: 0.3; }
+        }
+
+        /* Enhanced shake animation */
+        @keyframes shake-enhanced {
+            0%, 100% { transform: translateX(0) scale(1); }
+            10%, 30%, 50%, 70%, 90% { transform: translateX(-8px) scale(1.02); }
+            20%, 40%, 60%, 80% { transform: translateX(8px) scale(1.02); }
+        }
+
+        .shake-enhanced {
+            animation: shake-enhanced 0.8s ease-in-out;
+        }
+
+        /* Completed step styling */
+        .bs-stepper-circle.completed {
+            background-color: #198754 !important;
+            color: white !important;
+            border-color: #198754 !important;
+            box-shadow: 0 0 0 0.2rem rgba(25, 135, 84, 0.25);
+            position: relative;
+        }
+
+        .bs-stepper-circle.completed::after {
+            content: '✓';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        /* Step transition animations */
+        .bs-stepper-circle {
+            transition: all 0.3s ease;
+        }
+
+        .step[data-target="#step-hotel-1"] .bs-stepper-circle.completed ~ .bs-stepper-label,
+        .step[data-target="#step-hotel-2"] .bs-stepper-circle.completed ~ .bs-stepper-label,
+        .step[data-target="#step-hotel-3"] .bs-stepper-circle.completed ~ .bs-stepper-label {
+            color: #198754;
+            font-weight: 600;
+        }
+
+        /* Disable step header buttons completely */
+        .step-trigger {
+            pointer-events: none !important;
+            cursor: default !important;
+            opacity: 0.7;
+        }
+
+        .step-trigger:hover {
+            background: none !important;
+            color: inherit !important;
+        }
+
+        .bs-stepper-circle {
+            pointer-events: none !important;
+            cursor: default !important;
+        }
+
+        /* Notification system styles */
+        .notification-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 9999;
+            max-width: 400px;
+        }
+
+        .notification {
+            background: #fff;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 16px 20px;
+            margin-bottom: 10px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            transform: translateX(100%);
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .notification.show {
+            transform: translateX(0);
+        }
+
+        .notification.error {
+            border-left: 4px solid #dc3545;
+            background: #fff5f5;
+        }
+
+        .notification.success {
+            border-left: 4px solid #198754;
+            background: #f0fff4;
+        }
+
+        .notification.warning {
+            border-left: 4px solid #ffc107;
+            background: #fffbf0;
+        }
+
+        .notification .notification-content {
+            flex: 1;
+        }
+
+        .notification .notification-title {
+            font-weight: 600;
+            margin-bottom: 4px;
+            font-size: 14px;
+        }
+
+        .notification .notification-message {
+            font-size: 13px;
+            color: #666;
+            line-height: 1.4;
+        }
+
+        .notification .notification-close {
+            background: none;
+            border: none;
+            font-size: 18px;
+            color: #999;
+            cursor: pointer;
+            padding: 0;
+            margin-left: 10px;
+        }
+
+        .notification .notification-close:hover {
+            color: #666;
+        }
+
+        .notification.error .notification-title {
+            color: #dc3545;
+        }
+
+        .notification.success .notification-title {
+            color: #198754;
+        }
+
+        .notification.warning .notification-title {
+            color: #ffc107;
+        }
+    </style>
+</head>
+
+<body>
+
+<!-- Notification Container -->
+<div class="notification-container" id="notificationContainer"></div>
+
+<!-- Header START -->
+<div th:replace="~{common/header :: header}"></div>
+<!-- Header END -->
+
+<!-- **************** MAIN CONTENT START **************** -->
+<main>
+
+    <!-- =======================
+    Page Banner START -->
+    <section class="pt-4 pt-md-5 pb-0">
+        <div class="container">
+            <div class="row">
+                <div class="col-12 text-center">
+                    <h1 class="fs-2 mb-2">Đăng Ký Khách Sạn Của Bạn</h1>
+                    <p class="mb-0">Chia sẻ thông tin khách sạn của bạn và bắt đầu tiếp cận hàng triệu khách hàng. Chúng
+                        tôi sẽ hướng dẫn bạn qua từng bước.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+    <!-- =======================
+    Page Banner END -->
+
+    <!-- =======================
+    Steps START -->
+    <section>
+        <div class="container">
+            <div id="hostStepper" class="bs-stepper stepper-outline">
+                <!-- Step Buttons START -->
+                <div class="bs-stepper-header" role="tablist">
+                    <!-- Step 1 -->
+                    <div class="step" data-target="#step-hotel-1">
+                        <div class="text-center">
+                            <button type="button" class="btn btn-link step-trigger mb-0" role="tab"
+                                    id="stepperHotelTrigger1" aria-controls="step-hotel-1">
+                                <span class="bs-stepper-circle">1</span>
+                            </button>
+                            <h6 class="bs-stepper-label d-none d-md-block">Thông Tin Khách Sạn</h6>
+                        </div>
+                    </div>
+                    <div class="line"></div>
+
+                    <!-- Step 2 -->
+                    <div class="step" data-target="#step-hotel-2">
+                        <div class="text-center">
+                            <button type="button" class="btn btn-link step-trigger mb-0" role="tab"
+                                    id="stepperHotelTrigger2" aria-controls="step-hotel-2">
+                                <span class="bs-stepper-circle">2</span>
+                            </button>
+                            <h6 class="bs-stepper-label d-none d-md-block">Chi Tiết Loại Phòng Cơ Bản</h6>
+                        </div>
+                    </div>
+                    <div class="line"></div>
+
+                    <!-- Step 3 -->
+                    <div class="step" data-target="#step-hotel-3">
+                        <div class="text-center">
+                            <button type="button" class="btn btn-link step-trigger mb-0" role="tab"
+                                    id="stepperHotelTrigger3" aria-controls="step-hotel-3">
+                                <span class="bs-stepper-circle">3</span>
+                            </button>
+                            <h6 class="bs-stepper-label d-none d-md-block">Chính Sách & Đăng Ký</h6>
+                        </div>
+                    </div>
+                </div>
+                <!-- Step Buttons END -->
+
+                <!-- Step content START -->
+                <div class="bs-stepper-content p-0 pt-4 pt-md-5">
+                    <form th:action="@{/register-host}" method="POST" enctype="multipart/form-data"
+                          id="registerHostForm">
+
+                        <!-- Step 1 content START: Hotel Information -->
+                        <div id="step-hotel-1" role="tabpanel" class="content fade"
+                             aria-labelledby="stepperHotelTrigger1">
+                            <div class="vstack gap-4">
+                                <h4 class="mb-0">Cung cấp thông tin về khách sạn của bạn</h4>
+
+                                <!-- Hotel Basic Information -->
+                                <div class="card shadow">
+                                    <div class="card-header border-bottom">
+                                        <h5 class="mb-0">Thông Tin Cơ Bản Khách Sạn</h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="col-12 mb-3">
+                                            <label class="form-label">Tên khách sạn của bạn *</label>
+                                            <input required class="form-control" type="text"
+                                                   placeholder="Ví dụ: Khách Sạn Sen Vàng" id="hotelName"
+                                                   name="hotelName">
+
+                                        </div>
+                                        <div class="col-12 mb-3">
+                                            <label for="hotelDescription" class="form-label">Mô tả về khách sạn của bạn
+                                                *</label>
+                                            <textarea required id="hotelDescription" name="hotelDescription" class="form-control"
+                                                      rows="5"></textarea>
+
+                                        </div>
+                                        <div class="col-12">
+                                            <label class="form-label">Ảnh đại diện khách sạn *</label>
+
+                                            <div class="dropzone dropzone-custom"
+                                                 data-dropzone='{"maxFiles": 1, "addRemoveLinks": true, "acceptedFiles": "image/*"}'
+                                                 id="hotelMainImage">
+                                                <div class="dz-message needsclick">
+                                                    <i class="bi bi-image-fill display-3"></i>
+                                                    <p>Kéo thả một ảnh hoặc nhấp để tải lên.</p>
+                                                </div>
+                                            </div>
+
+                                            <div class="mb-3">
+                                                <label for="hotelImageUpload" class="form-label">Hoặc chọn ảnh từ máy
+                                                    tính của bạn</label>
+                                                <!--                                                upload file here-->
+                                                <input class="form-control" type="file" id="hotelImageUpload"
+                                                       name="hotelImage" accept="image/*">
+                                                <small class="form-text text-muted">Chọn ảnh JPG/PNG từ thiết
+                                                    bị.</small>
+                                            </div>
+
+                                            <!--  Preview and hidden input -->
+                                            <img id="imagePreview" src=""
+                                                 style="max-width: 300px; display:none; margin-top:10px;"/>
+                                            <input type="hidden" id="imageUrl" name="imageUrl">
+
+                                            <small>Ảnh này sẽ là ảnh chính cho khách sạn của bạn.</small>
+                                        </div>
+
+                                    </div>
+                                </div>
+
+                                <!-- Hotel Location -->
+                                <div class="card shadow">
+                                    <div class="card-header border-bottom">
+                                        <h5 class="mb-0">Vị Trí Khách Sạn</h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="row g-3">
+                                            <div class="col-12">
+                                                <label class="form-label" for="hotelAddress">Địa chỉ khách sạn *</label>
+                                                <input required class="form-control" type="text"
+                                                       placeholder="Ví dụ: 123 Đường ABC, Phường XYZ, Quận 1"
+                                                       name="hotelAddress" id="hotelAddress">
+                                                <small>Địa chỉ chính xác sẽ giúp khách hàng tìm thấy bạn. Nhập địa chỉ
+                                                    có thể giúp định vị bản đồ.</small>
+                                            </div>
+
+                                            <div class="col-md">
+                                                <label class="form-label" for="hotelLocation">Khu vực/Địa điểm *</label>
+                                                <select required class="form-select js-choice" id="hotelLocation"
+                                                        name="hotelLocationId" data-search-enabled="true">
+                                                    <option value="">Chọn địa điểm</option>
+                                                    <!--/* Iterate over locations from the model */-->
+                                                    <th:block th:each="location : ${session.locations}">
+                                                        <option th:value="${location.id}"
+                                                                th:text="${location.cityName}">Location Name
+                                                        </option>
+                                                    </th:block>
+                                                </select>
+                                            </div>
+
+                                            <!-- Interactive Map Integration START -->
+                                            <div class="col-12 mt-3">
+                                                <label class="form-label">Chọn vị trí trên bản đồ hoặc nhập tọa độ thủ
+                                                    công:</label>
+                                                <div id="interactiveHotelMap">
+                                                    <!-- Map will be initialized here by Leaflet -->
+                                                </div>
+                                                <small class="form-text text-muted">Kéo thả ghim hoặc nhấp vào bản đồ để
+                                                    chọn vị trí. Tọa độ sẽ tự động cập nhật bên dưới.</small>
+                                            </div>
+                                            <!-- Interactive Map Integration END -->
+
+                                            <!-- Manual Latitude and Longitude Input START -->
+                                            <div class="col-md-6 mt-2">
+                                                <label for="hotelLatitudeManual" class="form-label">Vĩ độ
+                                                    (Latitude)</label>
+                                                <input type="text" class="form-control" id="hotelLatitudeManual"
+                                                       required name="hotelLatitude" placeholder="Ví dụ: 21.028511">
+                                            </div>
+                                            <div class="col-md-6 mt-2">
+                                                <label for="hotelLongitudeManual" class="form-label">Kinh độ
+                                                    (Longitude)</label>
+                                                <input type="text" class="form-control" id="hotelLongitudeManual"
+                                                       required name="hotelLongitude" placeholder="Ví dụ: 105.854167">
+                                            </div>
+                                            <div class="col-12">
+                                                <small class="form-text text-muted">
+                                                    Tọa độ sẽ được cập nhật từ bản đồ, hoặc bạn có thể nhập thủ công.
+                                                </small>
+                                            </div>
+                                            <!-- Manual Latitude and Longitude Input END -->
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="text-end">
+                                    <button class="btn btn-primary next-btn mb-0">Tiếp Theo</button>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Step 1 content END -->
+
+                        <!-- Step 2 content START: Initial Room Type Details -->
+                        <div id="step-hotel-2" role="tabpanel" class="content fade"
+                             aria-labelledby="stepperHotelTrigger2">
+                            <div class="vstack gap-4">
+                                <h4 class="mb-0">Thiết lập loại phòng đầu tiên của bạn</h4>
+                                <p>Bạn có thể thêm nhiều loại phòng khác sau khi khách sạn được đăng ký.</p>
+
+                                <!-- Room Details -->
+                                <div class="card shadow">
+                                    <div class="card-header border-bottom">
+                                        <h5 class="mb-0">Thông Tin Loại Phòng</h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="row g-3">
+                                            <div class="col-md-6">
+                                                <label for="roomCategory" class="form-label">Loại phòng (Hạng phòng)
+                                                    *</label>
+                                                <select name="roomTypeId" required class="form-select js-choice"
+                                                        id="roomCategory">
+                                                    <option value="">Chọn loại phòng</option>
+                                                    <option th:each="type : ${session.roomTypes}"
+                                                            th:value="${type.roomTypeId}"
+                                                            th:text="${type.name}"
+                                                    >
+                                                    </option>
+                                                </select>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <label class="form-label">Tên/Tiêu đề phòng *</label>
+                                                <input type="text" class="form-control" required
+                                                       placeholder="Ví dụ: Phòng Standard giường đôi hướng phố"
+                                                       name="roomTitle" id="roomTitle">
+                                            </div>
+                                            <div class="col-md-6">
+                                                <label class="form-label">Số khách tối đa / phòng *</label>
+                                                <input name="roomMaxGuests" type="number" class="form-control" required
+                                                       placeholder="Số lượng khách"
+                                                       min="1" id="roomMaxGuests">
+                                            </div>
+                                            <div class="col-md-6">
+                                                <label class="form-label">Số lượng phòng loại này *</label>
+                                                <input type="number" class="form-control" placeholder="Số lượng" min="1" required
+                                                       name="roomQuantity" id="roomQuantity">
+                                            </div>
+                                            <div class="col-md-6">
+                                                <label class="form-label">Giá mỗi đêm (VND) *</label>
+                                                <input type="number" class="form-control" placeholder="Giá phòng" required
+                                                       name="roomPrice" min="0" id="roomPrice">
+                                            </div>
+                                            <div class="col-12">
+                                                <label class="form-label" for="roomDescription">Mô tả chi tiết về loại
+                                                    phòng này *</label>
+                                                <textarea id="roomDescription" name="roomDescription"
+                                                          class="form-control" rows="5" required
+                                                          placeholder="Mô tả về kích thước phòng, loại giường, tầm nhìn, và các đặc điểm nổi bật khác.">
+</textarea>
+
+                                            </div>
+
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Room Amenities -->
+                                <div class="card shadow">
+                                    <div class="card-header border-bottom">
+                                        <h5 class="mb-0">Tiện Nghi Phòng</h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <label class="form-label mb-3">Chọn các tiện nghi có trong loại phòng
+                                            này:</label>
+
+                                        <!--                                        Map.Entry<String, List<Amenity>> entry : groupedAmenities.entrySet()-->
+                                        <div th:each="entry : ${groupedAmenities}">
+                                            <h6 class="fw-bold mb-2" th:text="${entry.key}">Tên danh mục</h6>
+                                            <div class="row">
+                                                <div class="col-sm-6 col-md-4" th:each="amenity : ${entry.value}">
+                                                    <div class="form-check mb-2">
+                                                        <input class="form-check-input"
+                                                               type="checkbox"
+                                                               th:id="'amenity-' + ${amenity.amenityId}"
+                                                               th:name="amenities"
+                                                               th:value="${amenity.amenityId}"/>
+                                                        <label class="form-check-label"
+                                                               th:for="'amenity-' + ${amenity.amenityId}"
+                                                               th:text="${amenity.name}"></label>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <hr class="my-3"/>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Room Photos -->
+                                <div class="card shadow">
+                                    <div class="card-header border-bottom">
+                                        <h5 class="mb-0">Hình Ảnh Loại Phòng</h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <label class="form-label">Tải lên hình ảnh cho loại phòng này (từ 3 đến 5 ảnh)
+                                            *</label>
+                                        <div class="dropzone dropzone-custom"
+                                             data-dropzone='{"maxFiles": 5, "addRemoveLinks": true, "acceptedFiles": "image/*"}'
+                                             id="roomImages">
+                                            <div class="dz-message needsclick">
+                                                <i class="bi bi-images display-3"></i>
+                                                <p>Kéo thả tệp vào đây hoặc nhấp để tải lên.</p>
+                                                <p><small class="text-muted">Tối thiểu 3 ảnh, tối đa 5 ảnh</small></p>
+                                            </div>
+                                        </div>
+                                        <div class="mt-3">
+                                            <label for="roomImageUpload" class="form-label">Hoặc chọn ảnh từ máy tính
+                                                của bạn</label>
+                                            <input class="form-control" type="file" id="roomImageUpload"
+                                                   name="roomImageFiles" accept="image/*" multiple>
+                                            <small>Chọn từ 3-5 ảnh JPG/PNG từ thiết bị của bạn.</small>
+                                            <div id="roomImagePreviewContainer"
+                                                 class="mt-3 d-flex flex-wrap gap-2"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="hstack gap-2 flex-wrap justify-content-between">
+                                <button class="btn btn-secondary prev-btn mb-0">Trước</button>
+                                <button class="btn btn-primary next-btn mb-0">Tiếp Theo</button>
+                            </div>
+                        </div>
+                        <!-- Step 2 content END -->
+
+                        <!-- Step 3 content START: Policies & Registration -->
+                        <div id="step-hotel-3" role="tabpanel" class="content fade"
+                             aria-labelledby="stepperHotelTrigger3">
+                            <div class="vstack gap-4">
+                                <h4 class="mb-0">Chính sách khách sạn và hoàn tất đăng ký</h4>
+
+                                <!-- Hotel Policies / House Rules -->
+                                <div class="card shadow">
+                                    <div class="card-header border-bottom">
+                                        <h5 class="mb-0">Nội Quy & Chính Sách Khách Sạn</h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <label class="form-label">Quy định chung cho khách (ví dụ: giờ nhận/trả phòng,
+                                            chính
+                                            sách hút thuốc, vật nuôi, hủy phòng...) *</label>
+                                        <textarea name="hotelPolicies" class="form-control" rows="5"
+                                                  placeholder="Ví dụ: Giờ nhận phòng: 14:00, Giờ trả phòng: 12:00. Không hút thuốc trong phòng. Cho phép vật nuôi nhỏ với phụ phí..."
+                                                  id="hotelPolicies" required></textarea>
+                                    </div>
+                                </div>
+
+
+                                <!-- Summary Review -->
+                                <div class="card shadow">
+                                    <div class="card-header border-bottom">
+                                        <h5 class="mb-0">Xem Lại Thông Tin Đăng Ký</h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <p>Vui lòng kiểm tra lại tất cả thông tin bạn đã cung cấp. Bạn có thể quay lại
+                                            các bước
+                                            trước để chỉnh sửa nếu cần.</p>
+                                        <ul class="list-group list-group-flush">
+                                            <li class="list-group-item"><strong>Tên khách sạn:</strong> <span
+                                                    id="summaryHotelName">[Sẽ hiển thị ở đây]</span></li>
+                                            <li class="list-group-item"><strong>Địa chỉ:</strong> <span
+                                                    id="summaryHotelAddress">[Sẽ hiển thị ở đây]</span></li>
+                                            <li class="list-group-item"><strong>Thành phố:</strong> <span
+                                                    id="summaryHotelCity">[Sẽ hiển thị ở đây]</span>
+                                            </li>
+                                            <li class="list-group-item"><strong>Vĩ độ:</strong> <span
+                                                    id="summaryLatitude">[Sẽ hiển thị ở đây]</span>
+                                            </li>
+                                            <li class="list-group-item"><strong>Kinh độ:</strong> <span
+                                                    id="summaryLongitude">[Sẽ hiển thị ở đây]</span>
+                                            </li>
+                                            <li class="list-group-item"><strong>Loại phòng cơ bản:</strong> <span
+                                                    id="summaryRoomTitle">[Sẽ hiển thị ở đây]</span></li>
+                                            <li class="list-group-item"><strong>Giá phòng cơ bản:</strong> <span
+                                                    id="summaryRoomPrice">[Sẽ hiển thị ở đây]</span> VND
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </div>
+
+                                <!-- Terms and Conditions -->
+                                <div class="card shadow">
+                                    <div class="card-header border-bottom">
+                                        <h5 class="mb-0">Điều Khoản & Cam Kết</h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" value="" id="agreeTerms"
+                                                   required>
+                                            <label class="form-check-label" for="agreeTerms">
+                                                Tôi đồng ý với <a href="terms-of-service.html" target="_blank">Điều
+                                                khoản Dịch
+                                                vụ</a> và <a href="privacy-policy.html" target="_blank">Chính sách Bảo
+                                                mật</a>
+                                                của Booking.
+                                            </label>
+                                        </div>
+                                        <div class="form-check mt-2">
+                                            <input class="form-check-input" type="checkbox" value="" id="hostCommitment"
+                                                   required>
+                                            <label class="form-check-label" for="hostCommitment">
+                                                Tôi cam kết cung cấp thông tin chính xác, dịch vụ chất lượng và tuân thủ
+                                                các
+                                                tiêu chuẩn của Booking.
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="hstack gap-2 flex-wrap justify-content-between">
+                                    <button class="btn btn-secondary prev-btn mb-0">Trước</button>
+                                    <button type="submit" class="btn btn-success mb-0">Gửi Đăng Ký Khách Sạn</button>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Step 3 content END -->
+
+                    </form>
+                </div>
+                <!-- Step content END -->
+            </div>
+        </div>
+    </section>
+    <!-- =======================
+    Steps END -->
+
+</main>
+<!-- **************** MAIN CONTENT END **************** -->
+
+<!-- =======================
+Footer START -->
+<div th:replace="~{common/footer :: footer}"></div>
+<!-- =======================
+Footer END -->
+
+<!-- Back to top -->
+<div class="back-top"></div>
+
+<!-- Bootstrap JS -->
+<script src="assets/vendor/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+<!-- Vendors -->
+<script src="assets/vendor/choices/js/choices.min.js"></script>
+<script src="assets/vendor/stepper/js/bs-stepper.min.js"></script>
+<script src="assets/vendor/quill/js/quill.min.js"></script>
+<script src="assets/vendor/dropzone/js/dropzone.js"></script>
+<!-- Leaflet JS -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+        crossorigin=""></script>
+<!-- ThemeFunctions -->
+<script src="assets/js/functions.js"></script>
+
+
+<!--
+                      Map & Location Functions
+initializeHotelMap() - Creates interactive Leaflet map with Vietnam bounds and draggable marker
+updateLatLngInputs(latlng) - Updates latitude/longitude input fields when marker moves
+
+geocodeAddressAndSetMap() - Converts address text to coordinates and updates map position
+
+                 Form Validation Functions
+validateImageUploads() - Checks if required hotel and room images are uploaded (multiple validation methods)
+showNotification(type, title, message, duration) - Displays colored notification popups
+showErrorNotification() / showSuccessNotification() / showWarningNotification() - Wrapper functions for specific notification types
+showFieldError(element, message) - Adds error styling and message to form fields
+removeFieldError(element) - Removes error styling and messages
+showFieldSuccess(element) - Adds success styling to valid form fields
+validateField(element) - Validates individual form field against defined rules
+validateSelect(element) - Validates dropdown selections
+validateFileInput(element) - Validates file upload inputs
+validateCheckboxes() - Validates required checkboxes and amenity selections
+validateCurrentStep() - Validates all fields in the currently visible step
+validateCurrentStepFields(stepNumber) - Comprehensive validation for specific steps
+markStepAsCompleted(stepNumber) - Adds visual "completed" styling to step headers
+
+             Stepper Navigation Functions
+updateSummary() - Populates the final review step with user-entered data
+controlStepHeaderButtons() - Prevents skipping ahead to incomplete steps
+getCurrentStepIndex() - Returns which step (0-2) is currently active
+isStepCompleted(stepNumber) - Checks if a step has been marked as completed
+
+              Image Upload Functions
+Hotel Image Upload:
+handleFile(file) - Processes single hotel image upload (drag/drop or file input)
+Room Image Upload:
+addFiles(newFiles) - Adds multiple room images to upload queue
+renderPreviews() - Creates thumbnail previews with delete buttons
+updateInputFiles() - Syncs file list with actual form input for submission-->
+
+<script>
+    // Global variables to track dropzone uploads - make them truly global
+    var hotelImageUploaded = false;
+    var roomImagesCount = 0;
+
+    document.addEventListener('DOMContentLoaded', function () {
+        var stepperEl = document.querySelector('#hostStepper');
+        var stepper;
+
+
+        if (stepperEl) {
+            stepper = new Stepper(stepperEl, {
+                linear: false, // Set to true if you want to enforce step-by-step progression
+                animation: true
+            });
+        }
+
+
+        // Initialize Choices.js
+        var choiceElements = document.querySelectorAll('.js-choice');
+        choiceElements.forEach(function (el) {
+            const enableSearch = el.id === 'hotelLocation';
+            new Choices(el, {
+                searchEnabled: enableSearch,
+                itemSelectText: 'Nhấn để chọn',
+            });
+        });
+        // Finds all selects with .js-choice
+        // Enables search only for #hotelLocation
+        //   Adds placeholder text "Nhấn để chọn"
+
+        // --- Leaflet Map Integration ---
+        var map;
+        var marker;
+        const hotelLatInput = document.getElementById('hotelLatitudeManual');
+        const hotelLngInput = document.getElementById('hotelLongitudeManual');
+        const hotelAddressInput = document.getElementById('hotelAddress');
+        const hotelLocationSelect = document.getElementById('hotelLocation');
+        var mapInitialized = false;           //A flag to prevent the map from being initialized multiple times.
+        let geocodeDebounceTimer; // Timer for debouncing address input
+
+        // Define approximate bounds for Vietnam
+        // Southwest corner (e.g., Ca Mau peninsula) and Northeast corner (e.g., near Chinese border)
+        // You can get more precise bounds from http://bboxfinder.com/
+        const vietnamBounds = L.latLngBounds(        // bounding box for the whole country of Vietnam.
+            L.latLng(8.18, 102.14), // Southwest
+            L.latLng(23.39, 109.46)  // Northeast
+        );
+
+        function initializeHotelMap() {
+            if (mapInitialized || !document.getElementById('interactiveHotelMap')) return;
+
+            let defaultLat = 16.0479; // Approx center of Vietnam (Da Nang) for a broader initial view
+            let defaultLng = 108.2208;
+            let defaultZoom = 6;     // Zoom level to see most of Vietnam
+
+            // If existing lat/lng are provided and within Vietnam, use them
+            if (hotelLatInput && hotelLatInput.value && hotelLngInput && hotelLngInput.value) {
+                try {
+                    const latVal = parseFloat(hotelLatInput.value);
+                    const lngVal = parseFloat(hotelLngInput.value);
+                    if (!isNaN(latVal) && !isNaN(lngVal) && vietnamBounds.contains(L.latLng(latVal, lngVal))) {
+                        defaultLat = latVal;
+                        defaultLng = lngVal;
+                        defaultZoom = 15; // Zoom in closer if specific coords are given
+                    } else if (!isNaN(latVal) && !isNaN(lngVal)) {
+                        console.warn("Initial coordinates are outside Vietnam bounds. Using default.");
+                    }
+                } catch (e) {
+                    console.warn("Could not parse initial lat/lng from input fields.");
+                }
+            }
+
+            map = L.map('interactiveHotelMap', {
+                center: [defaultLat, defaultLng], // Set initial center
+                zoom: defaultZoom,                 // Set initial zoom
+                maxBounds: vietnamBounds,          // Restrict panning to these bounds
+                maxBoundsViscosity: 1.0,           // Make bounds completely solid
+                minZoom: 5                         // Prevent zooming out too far from Vietnam
+            });
+
+            // Set view again to ensure it respects bounds if center was slightly off
+            map.fitBounds(vietnamBounds); // This will try to fit Vietnam in view
+            // Then, if specific coords were given, zoom to them if they are within bounds
+            if (defaultZoom === 15) { // Indicates specific coords were likely used
+                map.setView([defaultLat, defaultLng], defaultZoom);
+            }
+
+
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            }).addTo(map);
+
+            // Ensure initial marker position is within bounds
+            let initialMarkerPos = L.latLng(defaultLat, defaultLng);
+            if (!vietnamBounds.contains(initialMarkerPos)) {
+                initialMarkerPos = vietnamBounds.getCenter(); // Fallback to center of bounds
+            }
+
+            marker = L.marker(initialMarkerPos, {
+                draggable: true
+            }).addTo(map);
+
+
+            function updateLatLngInputs(latlng) {
+                if (hotelLatInput) hotelLatInput.value = latlng.lat.toFixed(6);      //Converts the latitude to a string with 6 decimal places
+                if (hotelLngInput) hotelLngInput.value = latlng.lng.toFixed(6);
+            }
+
+            marker.on('dragend', function (event) {
+                const newPos = marker.getLatLng();
+                // Snap marker back inside bounds if dragged out (though maxBounds on map should mostly prevent this view)
+                if (!vietnamBounds.contains(newPos)) {
+                    marker.setLatLng(vietnamBounds.closestLayerPoint(map.latLngToLayerPoint(newPos)));
+                }
+                updateLatLngInputs(marker.getLatLng());
+            });
+
+            // If the user clicks anywhere on the map, the marker jumps to that point.
+            //     Then updates the input fields with the clicked location
+            map.on('click', function (e) {
+                // Click event latlng should already be within map's maxBounds
+                marker.setLatLng(e.latlng);
+                updateLatLngInputs(e.latlng);
+            });
+
+
+            if (hotelLatInput && hotelLngInput && (!hotelLatInput.value || !hotelLngInput.value || !vietnamBounds.contains(L.latLng(parseFloat(hotelLatInput.value), parseFloat(hotelLngInput.value))))) {
+                updateLatLngInputs(marker.getLatLng());
+            }
+            mapInitialized = true;
+        }
+
+
+
+        function geocodeAddressAndSetMap() {
+            if (!map) {
+                if (!mapInitialized) initializeHotelMap();
+                if (!map) {
+                    console.error("Map not initialized, cannot geocode.");
+                    return;
+                }
+            }
+            if (!hotelAddressInput) return;
+
+            const address = hotelAddressInput.value;
+            let cityName = "";
+            if (hotelLocationSelect && hotelLocationSelect.value) {
+                const selectedOption = hotelLocationSelect.options[hotelLocationSelect.selectedIndex];
+                if (selectedOption && selectedOption.value && selectedOption.text !== "Chọn địa điểm") {
+                    cityName = selectedOption.text;
+                }
+            }
+
+            let queryParts = [];
+            if (address && address.trim()) {
+                queryParts.push(address.trim());
+            }
+            if (cityName) {
+                if (!address || !address.trim() || address.toLowerCase().indexOf(cityName.toLowerCase()) === -1) {
+                    queryParts.push(cityName);
+                }
+            }
+
+            if (queryParts.length === 0 && cityName) {
+                queryParts.push(cityName);
+            }
+
+            if (queryParts.length === 0) return;
+
+            // Adding "Việt Nam" helps bias, but countrycodes is more explicit
+            // queryParts.push("Việt Nam"); // Optional: can keep or remove if countrycodes is used
+            let query = queryParts.join(", ");
+
+            if (map.lastGeocodedQuery === query) return;
+
+            // Add countrycodes=vn to restrict search to Vietnam
+            // Add viewbox for biasing, using Vietnam's rough bounding box
+            // viewbox=longitude_min,latitude_min,longitude_max,latitude_max
+            const vnViewbox = `${vietnamBounds.getWest()},${vietnamBounds.getSouth()},${vietnamBounds.getEast()},${vietnamBounds.getNorth()}`;
+            const nominatimUrl = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=5&countrycodes=vn&viewbox=${vnViewbox}&bounded=1`;
+
+
+            fetch(nominatimUrl)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`Nominatim API request failed: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data && data.length > 0) {
+                        // Optionally, you could check if data[0] is within vietnamBounds before using it
+                        // but countrycodes=vn should already ensure this.
+                        const lat = parseFloat(data[0].lat);
+                        const lon = parseFloat(data[0].lon);
+
+                        if (vietnamBounds.contains(L.latLng(lat, lon))) {
+                            map.setView([lat, lon], (address && address.trim()) ? 15 : 13);
+                            marker.setLatLng([lat, lon]);
+                            if (hotelLatInput) hotelLatInput.value = lat.toFixed(6);
+                            if (hotelLngInput) hotelLngInput.value = lon.toFixed(6);
+                            map.lastGeocodedQuery = query;
+                        } else {
+                            console.warn('Geocoded result is outside Vietnam bounds (should not happen with countrycodes=vn):', data[0].display_name);
+                        }
+                    } else {
+                        console.warn('Geocoding: No results found for query in Vietnam:', query);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error geocoding:', error);
+                    if (map) map.lastGeocodedQuery = null;
+                });
+        }
+
+        if (hotelAddressInput) {
+            hotelAddressInput.addEventListener('input', function () {
+                clearTimeout(geocodeDebounceTimer);
+                geocodeDebounceTimer = setTimeout(() => {
+                    geocodeAddressAndSetMap();
+                }, 1000);
+            });
+            hotelAddressInput.addEventListener('blur', geocodeAddressAndSetMap);
+        }
+
+        if (hotelLocationSelect) {
+            hotelLocationSelect.addEventListener('change', geocodeAddressAndSetMap);
+        }
+
+        if (stepperEl) {
+            stepperEl.addEventListener('shown.bs-stepper', function (event) {
+                if (event.detail.indexStep === 0) {
+                    if (!mapInitialized) {
+                        initializeHotelMap();
+                    }
+                    if (map) {
+                        setTimeout(function () {
+                            map.invalidateSize();
+                        }, 100);
+                    }
+                }
+                if (event.detail.indexStep === 2) {
+                    updateSummary();
+                }
+            });
+        }
+
+        if (document.querySelector('#step-hotel-1.active') || (stepper && stepper._currentIndex === 0)) {
+            if (!mapInitialized) {
+                initializeHotelMap();
+            }
+            if (map) {
+                setTimeout(function () {
+                    map.invalidateSize();
+                }, 100);
+            }
+        }
+
+        function updateSummary() {
+            document.getElementById('summaryHotelName').textContent = document.getElementById('hotelName')?.value || '[Chưa nhập]';
+            document.getElementById('summaryHotelAddress').textContent = document.getElementById('hotelAddress')?.value || '[Chưa nhập]';
+            let selectedCityText = '[Chưa chọn]';
+            if (hotelLocationSelect && hotelLocationSelect.value) {
+                const selectedOption = hotelLocationSelect.options[hotelLocationSelect.selectedIndex];
+                if (selectedOption && selectedOption.value && selectedOption.text !== "Chọn địa điểm") {
+                    selectedCityText = selectedOption.text;
+                }
+            }
+            document.getElementById('summaryHotelCity').textContent = selectedCityText;
+            document.getElementById('summaryLatitude').textContent = hotelLatInput?.value || '[Chưa chọn]';
+            document.getElementById('summaryLongitude').textContent = hotelLngInput?.value || '[Chưa chọn]';
+            document.getElementById('summaryRoomTitle').textContent = document.getElementById('roomTitle')?.value || '[Chưa nhập]';
+            document.getElementById('summaryRoomPrice').textContent = document.getElementById('roomPrice')?.value || '[Chưa nhập]';
+        }
+
+        // --- Enhanced Form Validation Logic ---
+        const form = document.getElementById('registerHostForm');
+
+        // Global variables to track dropzone uploads
+        let hotelImageUploaded = false;
+        let roomImagesCount = 0;
+
+        // Enhanced image validation that checks both file input and dropzone
+        function validateImageUploads() {
+            // Check hotel image - multiple methods: file input, preview display, URL input, global flag
+            const hotelImageInput = document.getElementById('hotelImageUpload');
+            const imageUrl = document.getElementById('imageUrl');
+            const hotelImagePreview = document.getElementById('imagePreview');
+
+            let hotelImageValid = false;
+
+            // Check file input (traditional upload)
+            if (hotelImageInput && hotelImageInput.files.length > 0) {
+                hotelImageValid = true;
+            }
+            // Check if image preview is visible and has source (drag-and-drop or any upload)
+            else if (hotelImagePreview && hotelImagePreview.style.display !== 'none' && hotelImagePreview.src && hotelImagePreview.src !== window.location.href && hotelImagePreview.src !== '') {
+                hotelImageValid = true;
+            }
+            // Check URL input (manual URL entry)
+            else if (imageUrl && imageUrl.value.trim() !== '') {
+                hotelImageValid = true;
+            }
+            // Check global upload flag (set by drag-and-drop handlers)
+            else if (window.hotelImageUploaded === true) {
+                hotelImageValid = true;
+            }
+
+            // Check room images - multiple methods: file input, preview containers, global counter
+            const roomImageInput = document.getElementById('roomImageUpload');
+            const roomImagePreviews = document.querySelectorAll('#roomImagePreviewContainer img');
+            const maxRoomImages = 5;
+            const minRoomImages = 3;
+
+            let roomImagesValid = false;
+            let roomImagesCount = 0;
+            let roomImagesErrorMessage = '';
+
+            // Get the actual count from different sources
+            if (roomImageInput && roomImageInput.files.length > 0) {
+                roomImagesCount = roomImageInput.files.length;
+            } else if (roomImagePreviews.length > 0) {
+                roomImagesCount = roomImagePreviews.length;
+            } else if (window.roomImagesCount > 0) {
+                roomImagesCount = window.roomImagesCount;
+            }
+
+            // Validate room images count
+            if (roomImagesCount < minRoomImages) {
+                roomImagesErrorMessage = `Vui lòng tải lên ít nhất ${minRoomImages} ảnh phòng (hiện tại: ${roomImagesCount}/${maxRoomImages})`;
+                roomImagesValid = false;
+            } else if (roomImagesCount > maxRoomImages) {
+                roomImagesErrorMessage = `Số lượng ảnh vượt quá giới hạn. Tối đa ${maxRoomImages} ảnh (hiện tại: ${roomImagesCount}/${maxRoomImages})`;
+                roomImagesValid = false;
+            } else {
+                roomImagesValid = true;
+            }
+
+            // Debug logging to help troubleshoot
+            console.log('Hotel Image Validation:', {
+                fileInputCount: hotelImageInput ? hotelImageInput.files.length : 0,
+                previewVisible: hotelImagePreview ? hotelImagePreview.style.display !== 'none' : false,
+                previewHasSrc: hotelImagePreview ? (hotelImagePreview.src && hotelImagePreview.src !== window.location.href && hotelImagePreview.src !== '') : false,
+                urlValue: imageUrl ? imageUrl.value.trim() : '',
+                globalFlag: window.hotelImageUploaded,
+                finalResult: hotelImageValid
+            });
+
+            console.log('Room Images Validation:', {
+                fileInputCount: roomImageInput ? roomImageInput.files.length : 0,
+                previewCount: roomImagePreviews.length,
+                globalCount: window.roomImagesCount,
+                actualCount: roomImagesCount,
+                minRequired: minRoomImages,
+                maxAllowed: maxRoomImages,
+                errorMessage: roomImagesErrorMessage,
+                finalResult: roomImagesValid
+            });
+
+            return { 
+                hotelImageValid, 
+                roomImagesValid, 
+                roomImagesCount, 
+                roomImagesErrorMessage,
+                maxRoomImages,
+                minRoomImages
+            };
+        }
+
+        // Notification System
+        function showNotification(type, title, message, duration = 5000) {
+            const container = document.getElementById('notificationContainer');
+
+            const notification = document.createElement('div');
+            notification.className = `notification ${type}`;
+
+            notification.innerHTML = `
+                <div class="notification-content">
+                    <div class="notification-title">${title}</div>
+                    <div class="notification-message">${message}</div>
+                </div>
+                <button class="notification-close" onclick="this.parentElement.remove()">×</button>
+            `;
+
+            container.appendChild(notification);
+
+            // Trigger animation
+            setTimeout(() => {
+                notification.classList.add('show');
+            }, 100);
+
+            // Auto remove after duration
+            setTimeout(() => {
+                if (notification.parentElement) {
+                    notification.classList.remove('show');
+                    setTimeout(() => {
+                        if (notification.parentElement) {
+                            notification.remove();
+                        }
+                    }, 300);
+                }
+            }, duration);
+        }
+
+        function showErrorNotification(title, message) {
+            showNotification('error', title, message);
+        }
+
+        function showSuccessNotification(title, message) {
+            showNotification('success', title, message);
+        }
+
+        function showWarningNotification(title, message) {
+            showNotification('warning', title, message);
+        }
+
+        // Validation rules and messages
+        const validationRules = {
+            'hotelName': {
+                required: true,
+                minLength: 3,
+                message: 'Tên khách sạn phải có ít nhất 3 ký tự'
+            },
+            'hotelDescription': {
+                required: true,
+                minLength: 10,
+                message: 'Mô tả khách sạn phải có ít nhất 10 ký tự'
+            },
+            'hotelAddress': {
+                required: true,
+                minLength: 5,
+                message: 'Địa chỉ phải có ít nhất 5 ký tự'
+            },
+            'hotelLocationId': {
+                required: true,
+                message: 'Vui lòng chọn địa điểm'
+            },
+            'hotelLatitude': {
+                required: true,
+                isNumber: true,
+                range: [-90, 90],
+                message: 'Vĩ độ phải là số từ -90 đến 90'
+            },
+            'hotelLongitude': {
+                required: true,
+                isNumber: true,
+                range: [-180, 180],
+                message: 'Kinh độ phải là số từ -180 đến 180'
+            },
+            'roomTypeId': {
+                required: true,
+                message: 'Vui lòng chọn loại phòng'
+            },
+            'roomTitle': {
+                required: true,
+                minLength: 3,
+                message: 'Tên phòng phải có ít nhất 3 ký tự'
+            },
+            'roomMaxGuests': {
+                required: true,
+                isNumber: true,
+                min: 1,
+                max: 20,
+                message: 'Số khách tối đa phải từ 1 đến 20'
+            },
+            'roomQuantity': {
+                required: true,
+                isNumber: true,
+                min: 1,
+                max: 100,
+                message: 'Số lượng phòng phải từ 1 đến 100'
+            },
+            'roomPrice': {
+                required: true,
+                isNumber: true,
+                min: 1000,
+                max: 50000000,
+                message: 'Giá phòng phải từ 1,000 VND đến 50,000,000 VND'
+            },
+            'roomDescription': {
+                required: true,
+                minLength: 10,
+                message: 'Mô tả phòng phải có ít nhất 10 ký tự'
+            },
+            'hotelPolicies': {
+                required: true,
+                minLength: 10,
+                message: 'Quy định khách sạn phải có ít nhất 10 ký tự'
+            }
+        };
+
+        // Function to show error message
+        function showFieldError(element, message) {
+            // Remove existing error
+            removeFieldError(element);
+
+            // Add error class
+            element.classList.add('is-invalid');
+
+            // Add shake animation
+            element.classList.add('shake');
+            setTimeout(() => {
+                element.classList.remove('shake');
+            }, 600);
+
+            // Create error message element
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'invalid-feedback';
+            errorDiv.textContent = message;
+            errorDiv.id = element.id + '_error';
+
+            // Insert error message after the element
+            element.parentNode.insertBefore(errorDiv, element.nextSibling);
+        }
+
+        // Function to remove error message
+        function removeFieldError(element) {
+            element.classList.remove('is-invalid');
+            const existingError = document.getElementById(element.id + '_error');
+            if (existingError) {
+                existingError.remove();
+            }
+        }
+
+        // Function to show success state
+        function showFieldSuccess(element) {
+            removeFieldError(element);
+            element.classList.add('is-valid');
+
+
+        }
+
+        // Function to validate individual field
+        function validateField(element) {
+            const fieldName = element.name || element.id;
+            const rule = validationRules[fieldName];
+            const value = element.value.trim();
+
+            // Remove previous validation states
+            element.classList.remove('is-valid', 'is-invalid');
+
+            if (!rule) return true; // No validation rule defined
+
+            // Required field check
+            if (rule.required && value === '') {
+                showFieldError(element, rule.message || 'Trường này là bắt buộc');
+                return false;
+            }
+
+            // If field is empty but not required, skip other validations
+            if (value === '' && !rule.required) return true;
+
+            // Minimum length check
+            if (rule.minLength && value.length < rule.minLength) {
+                showFieldError(element, rule.message);
+                return false;
+            }
+
+            // Number validation
+            if (rule.isNumber) {
+                const numValue = parseFloat(value);
+                if (isNaN(numValue)) {
+                    showFieldError(element, 'Giá trị phải là số');
+                    return false;
+                }
+
+                // Range check
+                if (rule.range && (numValue < rule.range[0] || numValue > rule.range[1])) {
+                    showFieldError(element, rule.message);
+                    return false;
+                }
+
+                // Minimum value check
+                if (rule.min !== undefined && numValue < rule.min) {
+                    showFieldError(element, rule.message);
+                    return false;
+                }
+
+                // Maximum value check
+                if (rule.max !== undefined && numValue > rule.max) {
+                    showFieldError(element, rule.message);
+                    return false;
+                }
+            }
+
+            showFieldSuccess(element);
+            return true;
+        }
+
+        // Function to validate select fields
+        function validateSelect(element) {
+            const value = element.value;
+            if (element.hasAttribute('required') && (value === '' || value === null)) {
+                showFieldError(element, 'Vui lòng chọn một lựa chọn');
+                return false;
+            }
+            showFieldSuccess(element);
+            return true;
+        }
+
+        // Function to validate file inputs
+        function validateFileInput(element) {
+            const files = element.files;
+
+            if (element.id === 'hotelImageUpload') {
+                // Check if either file is uploaded or URL is provided
+                const imageUrl = document.getElementById('imageUrl');
+                if (files.length === 0 && (!imageUrl || imageUrl.value.trim() === '')) {
+                    showFieldError(element, 'Vui lòng tải lên ảnh khách sạn');
+                    return false;
+                }
+            } else if (element.id === 'roomImageUpload') {
+                const imageValidation = validateImageUploads();
+                if (!imageValidation.roomImagesValid) {
+                    showFieldError(element, imageValidation.roomImagesErrorMessage);
+                    return false;
+                }
+            }
+
+            showFieldSuccess(element);
+            return true;
+        }
+
+        // Function to validate checkboxes
+        function validateCheckboxes() {
+            let isValid = true;
+
+            // Validate required checkboxes (terms and commitment)
+            const agreeTerms = document.getElementById('agreeTerms');
+            const hostCommitment = document.getElementById('hostCommitment');
+
+            if (agreeTerms && !agreeTerms.checked) {
+                showFieldError(agreeTerms, 'Bạn phải đồng ý với điều khoản dịch vụ');
+                isValid = false;
+            } else if (agreeTerms) {
+                showFieldSuccess(agreeTerms);
+            }
+
+            if (hostCommitment && !hostCommitment.checked) {
+                showFieldError(hostCommitment, 'Bạn phải cam kết tuân thủ tiêu chuẩn');
+                isValid = false;
+            } else if (hostCommitment) {
+                showFieldSuccess(hostCommitment);
+            }
+
+            // Validate amenities (at least one should be selected)
+            const amenityCheckboxes = document.querySelectorAll('input[name="amenities"]:checked');
+            if (amenityCheckboxes.length === 0) {
+                const firstAmenityCheckbox = document.querySelector('input[name="amenities"]');
+                if (firstAmenityCheckbox) {
+                    showFieldError(firstAmenityCheckbox.parentNode, 'Vui lòng chọn ít nhất một tiện nghi');
+                    isValid = false;
+                }
+            }
+
+            return isValid;
+        }
+
+        // Function to validate current step
+        function validateCurrentStep() {
+            const currentStep = document.querySelector('.content.fade.active') || document.querySelector('.content.fade.dstepper-block');
+            if (!currentStep) return true;
+
+            let stepValid = true;
+
+            // Validate all inputs in current step
+            currentStep.querySelectorAll('input[type="text"], input[type="number"], textarea').forEach(element => {
+                if (!validateField(element)) {
+                    stepValid = false;
+                }
+            });
+
+            // Validate selects in current step
+            currentStep.querySelectorAll('select').forEach(element => {
+                if (!validateSelect(element)) {
+                    stepValid = false;
+                }
+            });
+
+            // Validate file inputs in current step
+            currentStep.querySelectorAll('input[type="file"]').forEach(element => {
+                if (!validateFileInput(element)) {
+                    stepValid = false;
+                }
+            });
+
+            return stepValid;
+        }
+
+        // Add real-time validation
+        if (form) {
+            // Add event listeners for real-time validation
+            form.addEventListener('input', function(event) {
+                const element = event.target;
+
+                if (element.type === 'text' || element.type === 'number' || element.tagName === 'TEXTAREA') {
+                    validateField(element);
+                }
+            });
+
+            form.addEventListener('change', function(event) {
+                const element = event.target;
+
+                if (element.tagName === 'SELECT') {
+                    validateSelect(element);
+                } else if (element.type === 'file') {
+                    validateFileInput(element);
+                } else if (element.type === 'checkbox') {
+                    // Handle checkbox validation immediately without delay
+                    if (element.id === 'agreeTerms' || element.id === 'hostCommitment') {
+                        // Validate individual required checkboxes
+                        if (element.checked) {
+                            showFieldSuccess(element);
+                        } else {
+                            showFieldError(element, element.id === 'agreeTerms' ? 'Bạn phải đồng ý với điều khoản dịch vụ' : 'Bạn phải cam kết tuân thủ tiêu chuẩn');
+                        }
+                    }
+                    // Don't call validateCheckboxes() here as it conflicts with form submission
+                }
+            });
+
+            // Enhanced form submission validation
+            form.addEventListener('submit', function (event) {
+                let allFieldsValid = true;
+                let firstInvalidElement = null;
+                let emptyRequiredFields = [];
+                let invalidFields = [];
+
+                // Comprehensive check of all critical fields regardless of required attribute
+                const criticalFields = [
+                    { id: 'hotelName', label: 'Tên khách sạn' },
+                    { id: 'hotelDescription', label: 'Mô tả khách sạn' },
+                    { id: 'hotelAddress', label: 'Địa chỉ khách sạn' },
+                    { id: 'hotelLocation', label: 'Khu vực/Địa điểm' },
+                    { id: 'hotelLatitudeManual', label: 'Vĩ độ' },
+                    { id: 'hotelLongitudeManual', label: 'Kinh độ' },
+                    { id: 'roomCategory', label: 'Loại phòng' },
+                    { id: 'roomTitle', label: 'Tên phòng' },
+                    { id: 'roomMaxGuests', label: 'Số khách tối đa' },
+                    { id: 'roomQuantity', label: 'Số lượng phòng' },
+                    { id: 'roomPrice', label: 'Giá phòng' },
+                    { id: 'roomDescription', label: 'Mô tả phòng' },
+                    { id: 'hotelPolicies', label: 'Quy định khách sạn' }
+                ];
+
+                // Check all critical fields
+                criticalFields.forEach(function(fieldInfo) {
+                    const element = document.getElementById(fieldInfo.id);
+                    if (element) {
+                        if (element.tagName === 'SELECT') {
+                            if (element.value === '' || element.value === null) {
+                                emptyRequiredFields.push(fieldInfo.label);
+                                showFieldError(element, `Vui lòng chọn ${fieldInfo.label}`);
+                                allFieldsValid = false;
+                                if (!firstInvalidElement) firstInvalidElement = element;
+                            }
+                        } else if (element.type === 'text' || element.type === 'number' || element.tagName === 'TEXTAREA') {
+                            if (element.value.trim() === '') {
+                                emptyRequiredFields.push(fieldInfo.label);
+                                showFieldError(element, `${fieldInfo.label} là bắt buộc`);
+                                allFieldsValid = false;
+                                if (!firstInvalidElement) firstInvalidElement = element;
+                            } else if (!validateField(element)) {
+                                invalidFields.push(fieldInfo.label);
+                                allFieldsValid = false;
+                                if (!firstInvalidElement) firstInvalidElement = element;
+                            }
+                        }
+                    }
+                });
+
+                // Check additional required fields that might not be in the critical list
+                form.querySelectorAll('input[required], textarea[required], select[required]').forEach(function (element) {
+                    const fieldLabel = element.closest('.col-12, .col-md-6, .col-md')?.querySelector('label')?.textContent?.replace('*', '').trim() || element.placeholder || element.name || element.id;
+
+                    // Skip if already checked in critical fields
+                    const alreadyChecked = criticalFields.some(field => field.id === element.id);
+                    if (!alreadyChecked) {
+                        // Skip checkboxes - they are handled separately below
+                        if (element.type === 'checkbox') {
+                            return; // Skip checkbox validation in this loop
+                        }
+
+                        if (element.tagName === 'SELECT') {
+                            if (element.value === '' || element.value === null) {
+                                emptyRequiredFields.push(fieldLabel);
+                                showFieldError(element, `Vui lòng chọn ${fieldLabel}`);
+                                allFieldsValid = false;
+                                if (!firstInvalidElement) firstInvalidElement = element;
+                            }
+                        } else if (element.value.trim() === '') {
+                            emptyRequiredFields.push(fieldLabel);
+                            showFieldError(element, `${fieldLabel} là bắt buộc`);
+                            allFieldsValid = false;
+                            if (!firstInvalidElement) firstInvalidElement = element;
+                        } else if (!validateField(element)) {
+                            invalidFields.push(fieldLabel);
+                            allFieldsValid = false;
+                            if (!firstInvalidElement) firstInvalidElement = element;
+                        }
+                    }
+                });
+
+                // Check required file inputs using the proper image validation function
+                const imageValidation = validateImageUploads();
+                if (!imageValidation.hotelImageValid) {
+                    emptyRequiredFields.push('Ảnh đại diện khách sạn');
+                    const hotelImageInput = document.getElementById('hotelImageUpload');
+                    showFieldError(hotelImageInput, 'Vui lòng tải lên ảnh khách sạn');
+                    allFieldsValid = false;
+                    if (!firstInvalidElement) firstInvalidElement = hotelImageInput;
+                }
+
+                if (!imageValidation.roomImagesValid) {
+                    const roomImageInput = document.getElementById('roomImageUpload');
+                    if (imageValidation.roomImagesCount < imageValidation.minRoomImages) {
+                        emptyRequiredFields.push(`Hình ảnh phòng (tối thiểu ${imageValidation.minRoomImages} ảnh)`);
+                    } else if (imageValidation.roomImagesCount > imageValidation.maxRoomImages) {
+                        invalidFields.push(`Hình ảnh phòng (vượt quá ${imageValidation.maxRoomImages} ảnh)`);
+                    }
+                    showFieldError(roomImageInput, imageValidation.roomImagesErrorMessage);
+                    allFieldsValid = false;
+                    if (!firstInvalidElement) firstInvalidElement = roomImageInput;
+                }
+
+                // Check required checkboxes
+                const agreeTerms = document.getElementById('agreeTerms');
+                const hostCommitment = document.getElementById('hostCommitment');
+
+                if (agreeTerms && !agreeTerms.checked) {
+                    emptyRequiredFields.push('Đồng ý điều khoản dịch vụ');
+                    showFieldError(agreeTerms, 'Bạn phải đồng ý với điều khoản dịch vụ');
+                    allFieldsValid = false;
+                    if (!firstInvalidElement) firstInvalidElement = agreeTerms;
+                }
+
+                if (hostCommitment && !hostCommitment.checked) {
+                    emptyRequiredFields.push('Cam kết tuân thủ tiêu chuẩn');
+                    showFieldError(hostCommitment, 'Bạn phải cam kết tuân thủ tiêu chuẩn');
+                    allFieldsValid = false;
+                    if (!firstInvalidElement) firstInvalidElement = hostCommitment;
+                }
+
+                // Check amenities selection
+                const amenityCheckboxes = document.querySelectorAll('input[name="amenities"]:checked');
+                if (amenityCheckboxes.length === 0) {
+                    emptyRequiredFields.push('Tiện nghi phòng (chọn ít nhất 1)');
+                    const firstAmenityCheckbox = document.querySelector('input[name="amenities"]');
+                    if (firstAmenityCheckbox) {
+                        showFieldError(firstAmenityCheckbox.parentNode, 'Vui lòng chọn ít nhất một tiện nghi');
+                        allFieldsValid = false;
+                        if (!firstInvalidElement) firstInvalidElement = firstAmenityCheckbox;
+                    }
+                }
+
+                // Always prevent submission if not valid
+                if (!allFieldsValid) {
+                    event.preventDefault();
+
+                    // Create detailed notification message
+                    let notificationTitle = '';
+                    let notificationMessage = '';
+
+                    if (emptyRequiredFields.length > 0 && invalidFields.length > 0) {
+                        notificationTitle = 'Thông tin chưa đầy đủ!';
+                        notificationMessage = `Các trường bắt buộc chưa điền: ${emptyRequiredFields.join(', ')}. Các trường không hợp lệ: ${invalidFields.join(', ')}.`;
+                    } else if (emptyRequiredFields.length > 0) {
+                        notificationTitle = 'Thiếu thông tin bắt buộc!';
+                        notificationMessage = `Vui lòng điền đầy đủ các trường sau: ${emptyRequiredFields.join(', ')}.`;
+                    } else if (invalidFields.length > 0) {
+                        notificationTitle = 'Thông tin không hợp lệ!';
+                        notificationMessage = `Vui lòng kiểm tra lại các trường sau: ${invalidFields.join(', ')}.`;
+                    } else {
+                        // Fallback notification - this should catch cases where validation fails but no specific errors were identified
+                        notificationTitle = 'Không thể gửi biểu mẫu!';
+                        notificationMessage = 'Vui lòng kiểm tra và hoàn thành tất cả các trường bắt buộc. Đảm bảo rằng bạn đã điền đầy đủ thông tin khách sạn, thông tin phòng, tải lên hình ảnh và đồng ý với các điều khoản.';
+                    }
+
+                    showErrorNotification(
+                        notificationTitle,
+                        notificationMessage,
+                        10000
+                    );
+
+                    if (firstInvalidElement) {
+                        // Navigate to step containing the invalid element
+                        let stepPane = firstInvalidElement.closest('.content.fade');
+                        if (stepper && stepPane && !stepPane.classList.contains('active')) {
+                            const stepId = stepPane.id;
+                            const stepperHeader = document.querySelector(`.bs-stepper-header .step[data-target="#${stepId}"]`);
+                            if (stepperHeader) {
+                                const steps = Array.from(document.querySelectorAll('.bs-stepper-header .step'));
+                                const stepIndex = steps.indexOf(stepperHeader);
+                                if (stepIndex !== -1 && typeof stepper.to === 'function') {
+                                    stepper.to(stepIndex + 1);
+                                }
+                            }
+                        }
+
+                        // Focus and scroll to first invalid element
+                        setTimeout(() => {
+                            firstInvalidElement.focus();
+                            firstInvalidElement.scrollIntoView({behavior: 'smooth', block: 'center'});
+
+                            // Add enhanced visual emphasis
+                            firstInvalidElement.classList.add('focus-highlight', 'shake-enhanced');
+
+                            // Remove highlight after a few seconds
+                            setTimeout(() => {
+                                firstInvalidElement.classList.remove('focus-highlight', 'shake-enhanced');
+                            }, 4000);
+
+                            // Show additional notification about navigation
+                            setTimeout(() => {
+                                showWarningNotification(
+                                    'Đã điều hướng!',
+                                    'Đã di chuyển đến trường đầu tiên cần điền. Vui lòng hoàn thành thông tin.',
+                                    3000
+                                );
+                            }, 1000);
+                        }, 500);
+                    } else {
+                        // If no specific invalid element found, show general guidance
+                        showWarningNotification(
+                            'Cần kiểm tra!',
+                            'Vui lòng xem lại tất cả các bước và đảm bảo đã hoàn thành đầy đủ thông tin.',
+                            5000
+                        );
+                    }
+                } else {
+                    // Show single submission notification
+                    showSuccessNotification(
+                        'Đang gửi thông tin...',
+                        'Vui lòng chờ trong giây lát.'
+                    );
+
+                    // Mark final step as completed
+                    markStepAsCompleted(3);
+                }
+            });
+        }
+
+        // next button - restore step validation
+        const nextButtons = document.querySelectorAll('.next-btn');
+        nextButtons.forEach(button => {
+            button.addEventListener('click', function (event) {
+                // Determine current step and validate accordingly
+                let currentStepValid = true;
+                const currentStep = document.querySelector('.content.fade.active') || document.querySelector('.content.fade.dstepper-block');
+
+                if (currentStep) {
+                    if (currentStep.id === 'step-hotel-1') {
+                        currentStepValid = validateCurrentStepFields(1);
+                    } else if (currentStep.id === 'step-hotel-2') {
+                        currentStepValid = validateCurrentStepFields(2);
+                    }
+                }
+
+                if (!currentStepValid) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    return false;
+                } else {
+                    // Mark current step as completed
+                    if (currentStep.id === 'step-hotel-1') {
+                        markStepAsCompleted(1);
+                    } else if (currentStep.id === 'step-hotel-2') {
+                        markStepAsCompleted(2);
+                    }
+                }
+
+                if (stepper) {
+                    stepper.next();
+                }
+            });
+        });
+
+        // Step validation function
+        function validateCurrentStepFields(stepNumber) {
+            let isValid = true;
+            let emptyFields = [];
+            let firstInvalidElement = null;
+
+            if (stepNumber === 1) {
+                // Step 1 validation
+                const step1Fields = [
+                    { id: 'hotelName', label: 'Tên khách sạn' },
+                    { id: 'hotelDescription', label: 'Mô tả khách sạn' },
+                    { id: 'hotelAddress', label: 'Địa chỉ khách sạn' },
+                    { id: 'hotelLocation', label: 'Khu vực/Địa điểm' },
+                    { id: 'hotelLatitudeManual', label: 'Vĩ độ' },
+                    { id: 'hotelLongitudeManual', label: 'Kinh độ' }
+                ];
+
+                step1Fields.forEach(function(fieldInfo) {
+                    const element = document.getElementById(fieldInfo.id);
+                    if (element) {
+                        if (element.tagName === 'SELECT') {
+                            if (element.value === '' || element.value === null) {
+                                emptyFields.push(fieldInfo.label);
+                                showFieldError(element, `Vui lòng chọn ${fieldInfo.label}`);
+                                isValid = false;
+                                if (!firstInvalidElement) firstInvalidElement = element;
+                            }
+                        } else if (element.value.trim() === '') {
+                            emptyFields.push(fieldInfo.label);
+                            showFieldError(element, `${fieldInfo.label} là bắt buộc`);
+                            isValid = false;
+                            if (!firstInvalidElement) firstInvalidElement = element;
+                        } else if (!validateField(element)) {
+                            isValid = false;
+                            if (!firstInvalidElement) firstInvalidElement = element;
+                        }
+                    }
+                });
+
+                // Check hotel image
+                const imageValidation = validateImageUploads();
+                if (!imageValidation.hotelImageValid) {
+                    emptyFields.push('Ảnh đại diện khách sạn');
+                    const hotelImageInput = document.getElementById('hotelImageUpload');
+                    showFieldError(hotelImageInput, 'Vui lòng tải lên ảnh khách sạn');
+                    isValid = false;
+                    if (!firstInvalidElement) firstInvalidElement = hotelImageInput;
+                }
+
+                if (!isValid) {
+                    showErrorNotification(
+                        'Bước 1 chưa hoàn tất!',
+                        `Vui lòng hoàn thành các thông tin sau: ${emptyFields.join(', ')}.`,
+                        8000
+                    );
+                }
+
+            } else if (stepNumber === 2) {
+                // Step 2 validation
+                const step2Fields = [
+                    { id: 'roomCategory', label: 'Loại phòng' },
+                    { id: 'roomTitle', label: 'Tên phòng' },
+                    { id: 'roomMaxGuests', label: 'Số khách tối đa' },
+                    { id: 'roomQuantity', label: 'Số lượng phòng' },
+                    { id: 'roomPrice', label: 'Giá phòng' },
+                    { id: 'roomDescription', label: 'Mô tả phòng' }
+                ];
+
+                step2Fields.forEach(function(fieldInfo) {
+                    const element = document.getElementById(fieldInfo.id);
+                    if (element) {
+                        if (element.tagName === 'SELECT') {
+                            if (element.value === '' || element.value === null) {
+                                emptyFields.push(fieldInfo.label);
+                                showFieldError(element, `Vui lòng chọn ${fieldInfo.label}`);
+                                isValid = false;
+                                if (!firstInvalidElement) firstInvalidElement = element;
+                            }
+                        } else if (element.value.trim() === '') {
+                            emptyFields.push(fieldInfo.label);
+                            showFieldError(element, `${fieldInfo.label} là bắt buộc`);
+                            isValid = false;
+                            if (!firstInvalidElement) firstInvalidElement = element;
+                        } else if (!validateField(element)) {
+                            isValid = false;
+                            if (!firstInvalidElement) firstInvalidElement = element;
+                        }
+                    }
+                });
+
+                // Check room images
+                const imageValidation = validateImageUploads();
+                if (!imageValidation.roomImagesValid) {
+                    const roomImageInput = document.getElementById('roomImageUpload');
+                    if (imageValidation.roomImagesCount < imageValidation.minRoomImages) {
+                        emptyFields.push(`Hình ảnh phòng (tối thiểu ${imageValidation.minRoomImages} ảnh)`);
+                    } else if (imageValidation.roomImagesCount > imageValidation.maxRoomImages) {
+                        emptyFields.push(`Hình ảnh phòng (vượt quá ${imageValidation.maxRoomImages} ảnh)`);
+                    }
+                    showFieldError(roomImageInput, imageValidation.roomImagesErrorMessage);
+                    isValid = false;
+                    if (!firstInvalidElement) firstInvalidElement = roomImageInput;
+                }
+
+                // Check amenities selection
+                const amenityCheckboxes = document.querySelectorAll('input[name="amenities"]:checked');
+                if (amenityCheckboxes.length === 0) {
+                    emptyFields.push('Tiện nghi phòng (chọn ít nhất 1)');
+                    const firstAmenityCheckbox = document.querySelector('input[name="amenities"]');
+                    if (firstAmenityCheckbox) {
+                        showFieldError(firstAmenityCheckbox.parentNode, 'Vui lòng chọn ít nhất một tiện nghi');
+                        isValid = false;
+                        if (!firstInvalidElement) firstInvalidElement = firstAmenityCheckbox;
+                    }
+                }
+
+                if (!isValid) {
+                    showErrorNotification(
+                        'Bước 2 chưa hoàn tất!',
+                        `Vui lòng hoàn thành các thông tin sau: ${emptyFields.join(', ')}.`,
+                        8000
+                    );
+                }
+            }
+
+            if (!isValid && firstInvalidElement) {
+                setTimeout(() => {
+                    firstInvalidElement.focus();
+                    firstInvalidElement.scrollIntoView({behavior: 'smooth', block: 'center'});
+                    firstInvalidElement.classList.add('focus-highlight', 'shake-enhanced');
+                    setTimeout(() => {
+                        firstInvalidElement.classList.remove('focus-highlight', 'shake-enhanced');
+                    }, 4000);
+                }, 300);
+            }
+
+            return isValid;
+        }
+
+        // Function to mark step as completed
+        function markStepAsCompleted(stepNumber) {
+            const stepTrigger = document.getElementById(`stepperHotelTrigger${stepNumber}`);
+            if (stepTrigger) {
+                const circle = stepTrigger.querySelector('.bs-stepper-circle');
+                if (circle && !circle.classList.contains('completed')) {
+                    circle.classList.add('completed');
+                    circle.style.backgroundColor = '#198754';
+                    circle.style.color = 'white';
+
+
+                }
+            }
+        }
+
+        // back button
+        const prevButtons = document.querySelectorAll('.prev-btn');
+        prevButtons.forEach(button => {
+            button.addEventListener('click', function () {
+                if (stepper) {
+                    stepper.previous();
+                }
+            });
+        });
+
+        const reviewStepTrigger = document.getElementById('stepperHotelTrigger3');
+        if (reviewStepTrigger) {
+            reviewStepTrigger.addEventListener('click', updateSummary);
+        }
+
+        if (document.querySelector('#step-hotel-3.active') || (stepper && stepper._currentIndex === 2)) {
+            updateSummary();
+        }
+
+        // Control step header button clicks - prevent skipping ahead
+        function controlStepHeaderButtons() {
+            const stepTriggers = document.querySelectorAll('.step-trigger');
+
+            stepTriggers.forEach((trigger, index) => {
+                trigger.addEventListener('click', function(event) {
+                    const currentStepIndex = getCurrentStepIndex();
+                    const targetStepIndex = index; // 0-based: 0=step1, 1=step2, 2=step3
+
+                    // Allow going backwards (to review completed steps)
+                    if (targetStepIndex <= currentStepIndex) {
+                        return; // Allow the click
+                    }
+
+                    // Check if target step is unlocked
+                    const targetStepNumber = targetStepIndex + 1;
+                    const targetStepCompleted = isStepCompleted(targetStepNumber - 1); // Check if previous step is completed
+
+                    if (!targetStepCompleted && targetStepIndex > currentStepIndex) {
+                        event.preventDefault();
+                        event.stopPropagation();
+
+                        showWarningNotification(
+                            'Không thể bỏ qua bước!',
+                            `Vui lòng hoàn thành bước ${currentStepIndex + 1} trước khi chuyển đến bước ${targetStepNumber}.`,
+                            5000
+                        );
+
+                        return false;
+                    }
+                });
+            });
+        }
+
+        function getCurrentStepIndex() {
+            const activeStep = document.querySelector('.content.fade.active') || document.querySelector('.content.fade.dstepper-block');
+            if (!activeStep) return 0;
+
+            if (activeStep.id === 'step-hotel-1') return 0;
+            if (activeStep.id === 'step-hotel-2') return 1;
+            if (activeStep.id === 'step-hotel-3') return 2;
+            return 0;
+        }
+
+        function isStepCompleted(stepNumber) {
+            if (stepNumber === 0) return true; // Step 1 is always accessible
+
+            const stepTrigger = document.getElementById(`stepperHotelTrigger${stepNumber}`);
+            if (stepTrigger) {
+                const circle = stepTrigger.querySelector('.bs-stepper-circle');
+                return circle && circle.classList.contains('completed');
+            }
+            return false;
+        }
+
+        // Initialize step control
+        // controlStepHeaderButtons(); // Disabled - step buttons are disabled via CSS
+
+        // --- End of Enhanced Form Validation Logic ---
+
+        // HOTFIX: Override checkbox validation to prevent conflicts
+        const formElement = document.getElementById('registerHostForm');
+        if (formElement) {
+            formElement.addEventListener('submit', function(event) {
+                // Clear any existing checkbox errors first
+                const agreeTermsElement = document.getElementById('agreeTerms');
+                const hostCommitmentElement = document.getElementById('hostCommitment');
+
+                if (agreeTermsElement) {
+                    removeFieldError(agreeTermsElement);
+                }
+                if (hostCommitmentElement) {
+                    removeFieldError(hostCommitmentElement);
+                }
+
+                // Simple validation - if both are checked, remove any errors
+                if (agreeTermsElement && agreeTermsElement.checked && hostCommitmentElement && hostCommitmentElement.checked) {
+                    // Both checkboxes are checked - show success state
+                    showFieldSuccess(agreeTermsElement);
+                    showFieldSuccess(hostCommitmentElement);
+                }
+            }, true); // Use capture phase to run before the main validation
+        }
+    });
+</script>
+
+<!--hotel image upload-->
+<script>
+    const dropzone = document.getElementById("hotelMainImage");
+    const fileInput = document.getElementById("hotelImageUpload");
+    const previewImage = document.getElementById("imagePreview");
+    const hiddenInput = document.getElementById("imageUrl");
+
+    let currentFile = null;
+
+    // Prevent default drag behaviors
+    ["dragenter", "dragover", "dragleave", "drop"].forEach(eventName => {
+        dropzone.addEventListener(eventName, e => e.preventDefault());
+    });
+
+    dropzone.addEventListener("dragover", () => {
+        dropzone.classList.add("dragover");
+    });
+
+    dropzone.addEventListener("dragleave", () => {
+        dropzone.classList.remove("dragover");
+    });
+
+    dropzone.addEventListener("drop", (e) => {
+        dropzone.classList.remove("dragover");
+        const file = e.dataTransfer.files[0];
+        if (file) handleFile(file);
+    });
+
+    fileInput.addEventListener("change", () => {
+        const file = fileInput.files[0];
+        if (file) handleFile(file);
+    });
+
+    function handleFile(file) {
+        const validTypes = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+        if (!validTypes.includes(file.type)) {
+            alert("Chỉ chấp nhận ảnh JPG, PNG, GIF hoặc WEBP.");
+            return;
+        }
+
+        currentFile = file;
+        hiddenInput.value = ""; // clear existing URL
+
+        // CRITICAL FIX: Set the file in the actual form input for submission
+        const dt = new DataTransfer();
+        dt.items.add(file);
+        fileInput.files = dt.files;
+
+        // Set global flag for image upload tracking
+        hotelImageUploaded = true;
+        window.hotelImageUploaded = true; // Also set on window for validation access
+
+        const reader = new FileReader();
+        reader.onload = function (e) {
+            previewImage.src = e.target.result;
+            previewImage.style.display = "block";
+
+            // Add delete button if not already added
+            if (!document.getElementById("deleteImageBtn")) {
+                const deleteBtn = document.createElement("button");
+                deleteBtn.type = "button";
+                deleteBtn.textContent = "Xóa ảnh";
+                deleteBtn.className = "btn btn-danger btn-sm mt-2";
+                deleteBtn.id = "deleteImageBtn";
+                deleteBtn.onclick = () => {
+                    previewImage.src = "";
+                    previewImage.style.display = "none";
+                    fileInput.value = "";
+                    hiddenInput.value = "";
+                    hotelImageUploaded = false; // Reset flag when image is deleted
+                    window.hotelImageUploaded = false; // Also reset window flag
+                    deleteBtn.remove();
+                };
+                previewImage.insertAdjacentElement("afterend", deleteBtn);
+            }
+        };
+        reader.readAsDataURL(file);
+    }
+</script>
+
+<!--room image upload-->
+<script>
+    const dropzoneRoom = document.getElementById("roomImages");
+    const fileInputRoom = document.getElementById("roomImageUpload");
+    const previewContainer = document.getElementById("roomImagePreviewContainer");
+
+    let fileList = [];
+
+    // Prevent default behavior
+    ["dragenter", "dragover", "dragleave", "drop"].forEach(eventName => {
+        dropzoneRoom.addEventListener(eventName, e => e.preventDefault());
+    });
+
+    dropzoneRoom.addEventListener("dragover", () => {
+        dropzoneRoom.classList.add("dragover");
+    });
+
+    dropzoneRoom.addEventListener("dragleave", () => {
+        dropzoneRoom.classList.remove("dragover");
+    });
+
+    dropzoneRoom.addEventListener("drop", (e) => {
+        dropzoneRoom.classList.remove("dragover");
+        addFiles(Array.from(e.dataTransfer.files));
+    });
+
+    fileInputRoom.addEventListener("change", () => {
+        addFiles(Array.from(fileInputRoom.files));
+    });
+
+    function addFiles(newFiles) {
+        const validTypes = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+        const maxImages = 5;
+        let validFilesToAdd = [];
+        
+        newFiles.forEach(file => {
+            if (!validTypes.includes(file.type)) {
+                alert("Không chấp nhận file: " + file.name + ". Chỉ chấp nhận ảnh JPG, PNG, GIF hoặc WEBP.");
+                return;
+            }
+            
+            if (fileList.length + validFilesToAdd.length < maxImages) {
+                validFilesToAdd.push(file);
+            }
+        });
+        
+        // Check if we're trying to add too many files
+        if (fileList.length + validFilesToAdd.length > maxImages) {
+            const remainingSlots = maxImages - fileList.length;
+            if (remainingSlots > 0) {
+                validFilesToAdd = validFilesToAdd.slice(0, remainingSlots);
+                alert(`Chỉ có thể tải lên tối đa ${maxImages} ảnh. Đã thêm ${remainingSlots} ảnh đầu tiên.`);
+            } else {
+                alert(`Đã đạt giới hạn tối đa ${maxImages} ảnh. Vui lòng xóa bớt ảnh hiện tại trước khi thêm ảnh mới.`);
+                return;
+            }
+        }
+        
+        if (fileList.length + newFiles.length > maxImages) {
+            const totalAttempted = fileList.length + newFiles.length;
+            alert(`Không thể thêm tất cả ảnh. Bạn đang cố thêm ${newFiles.length} ảnh nhưng chỉ còn ${maxImages - fileList.length} vị trí trống (tối đa ${maxImages} ảnh).`);
+        }
+        
+        // Add valid files to the list
+        fileList.push(...validFilesToAdd);
+
+        // Update global room images count
+        roomImagesCount = fileList.length;
+        window.roomImagesCount = fileList.length; // Also set on window for validation access
+
+        renderPreviews();
+        updateInputFiles();
+        
+
+    }
+
+    function renderPreviews() {
+        previewContainer.innerHTML = "";
+        fileList.forEach((file, index) => {
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                const wrapper = document.createElement("div");
+                wrapper.classList.add("position-relative");
+
+                const img = document.createElement("img");
+                img.src = e.target.result;
+                img.style.maxWidth = "150px";
+                img.classList.add("rounded");
+
+                const deleteBtn = document.createElement("button");
+                deleteBtn.type = "button";
+                deleteBtn.innerHTML = "&times;";
+                deleteBtn.classList.add("btn", "btn-danger", "btn-sm", "position-absolute", "top-0", "end-0");
+                deleteBtn.onclick = () => {
+                    fileList.splice(index, 1);
+                    roomImagesCount = fileList.length; // Update global count
+                    window.roomImagesCount = fileList.length; // Also update window count
+                    renderPreviews();
+                    updateInputFiles();
+                };
+
+                wrapper.appendChild(img);
+                wrapper.appendChild(deleteBtn);
+                previewContainer.appendChild(wrapper);
+            };
+            reader.readAsDataURL(file);
+        });
+    }
+
+    function updateInputFiles() {
+        const dt = new DataTransfer();
+        fileList.forEach(file => dt.items.add(file));
+        fileInputRoom.files = dt.files;
+    }
+</script>
+
+</body>
+</html>

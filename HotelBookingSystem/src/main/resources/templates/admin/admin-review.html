@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Danh sách đặt phòng</title>
+
+    <!-- Favicon -->
+    <link rel="shortcut icon" th:href="@{/assets/images/favicon.ico}" />
+
+    <!-- Google Font -->
+    <link rel="preconnect" href="https://fonts.googleapis.com/" />
+    <link rel="preconnect" href="https://fonts.gstatic.com/" crossorigin />
+    <link rel="stylesheet"
+          href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&amp;family=Poppins:wght@400;500;700&amp;display=swap" />
+
+    <!-- Plugins CSS -->
+    <link rel="stylesheet" th:href="@{/assets/vendor/font-awesome/css/all.min.css}" />
+    <link rel="stylesheet" th:href="@{/assets/vendor/bootstrap-icons/bootstrap-icons.css}" />
+    <link rel="stylesheet" th:href="@{/assets/vendor/overlay-scrollbar/css/overlayscrollbars.min.css}" />
+    <link rel="stylesheet" th:href="@{/assets/vendor/choices/css/choices.min.css}" />
+    <link rel="stylesheet" th:href="@{/assets/vendor/glightbox/css/glightbox.css}" />
+
+    <!-- Theme CSS -->
+    <link rel="stylesheet" th:href="@{/assets/css/style.css}" />
+    <style>
+        .hover-card {
+            transition: all 0.3s ease;
+            cursor: pointer;
+            border-radius: 8px;
+        }
+
+        /* Light mode hover */
+        .hover-card:hover {
+            transform: translateY(-5px) scale(1.02);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+            background-color: #f8f9fa;
+        }
+
+        /* Dark mode hover */
+        body.dark .hover-card:hover,
+        [data-bs-theme="dark"] .hover-card:hover {
+            background-color: #2a2a2a; /* nền xám đậm hơn */
+            box-shadow: 0 10px 20px rgba(255, 255, 255, 0.05); /* sáng nhẹ */
+        }
+
+        .hover-card:hover .card-body,
+        .hover-card:hover .card-footer {
+            background-color: inherit !important;
+        }
+
+        [data-bs-theme="dark"] .hover-card:hover .card-body,
+        [data-bs-theme="dark"] .hover-card:hover .card-footer {
+            background-color: inherit !important;
+        }
+    </style>
+    <!-- Dark mode -->
+    <script>
+        const storedTheme = localStorage.getItem('theme')
+
+        const getPreferredTheme = () => {
+            if (storedTheme) {
+                return storedTheme
+            }
+            return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
+        }
+
+        const setTheme = function (theme) {
+            if (theme === 'auto' && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+                document.documentElement.setAttribute('data-bs-theme', 'dark')
+            } else {
+                document.documentElement.setAttribute('data-bs-theme', theme)
+            }
+        }
+
+        setTheme(getPreferredTheme())
+
+        window.addEventListener('DOMContentLoaded', () => {
+            var el = document.querySelector('.theme-icon-active');
+            if(el != 'undefined' && el != null) {
+                const showActiveTheme = theme => {
+                    const activeThemeIcon = document.querySelector('.theme-icon-active use')
+                    const btnToActive = document.querySelector(`[data-bs-theme-value="${theme}"]`)
+                    const svgOfActiveBtn = btnToActive.querySelector('.mode-switch use').getAttribute('href')
+
+                    document.querySelectorAll('[data-bs-theme-value]').forEach(element => {
+                        element.classList.remove('active')
+                    })
+
+                    btnToActive.classList.add('active')
+                    activeThemeIcon.setAttribute('href', svgOfActiveBtn)
+                }
+
+                window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+                    if (storedTheme !== 'light' || storedTheme !== 'dark') {
+                        setTheme(getPreferredTheme())
+                    }
+                })
+
+                showActiveTheme(getPreferredTheme())
+
+                document.querySelectorAll('[data-bs-theme-value]')
+                    .forEach(toggle => {
+                        toggle.addEventListener('click', () => {
+                            const theme = toggle.getAttribute('data-bs-theme-value')
+                            localStorage.setItem('theme', theme)
+                            setTheme(theme)
+                            showActiveTheme(theme)
+                        })
+                    })
+            }
+        })
+    </script>
+</head>
+
+<body>
+
+<!-- **************** MAIN CONTENT START **************** -->
+<main>
+
+    <!-- Sidebar START -->
+    <div th:replace="~{common-admin/admin-sidebar :: admin_sidebar}"></div>
+    <!-- Sidebar END -->
+
+    <!-- Page content START -->
+    <div class="page-content">
+
+        <!-- Top bar START -->
+        <div th:replace="~{common-admin/admin-topbar :: admin_topbar}"></div>
+        <!-- Top bar END -->
+
+        <!-- Page main content START -->
+        <div class="page-content-wrapper p-xxl-4">
+
+            <!-- Title -->
+            <div class="row">
+                <div class="col-12 mb-4 mb-sm-5">
+                    <h1 class="h3 mb-0">Đánh giá</h1>
+                </div>
+            </div>
+
+            <!-- Review box START -->
+            <div class="row g-4 g-xl-5 mb-5">
+                <!-- Growth -->
+                <div class="col-md-6 col-lg-4">
+                    <div class="bg-light p-4 rounded text-center h-100 d-flex flex-column justify-content-center hover-card">
+                        <h6 class="fw-normal">Tổng số lượt đánh giá</h6>
+                        <div class="d-flex align-items-center justify-content-center">
+                            <h2 class="mb-0 me-2" th:text="${thisYearReviewCount}">0</h2>
+                            <div class="badge bg-success bg-opacity-10 text-success"
+                                 th:text="${growthRate} + '%'">
+                                0% <i class="bi bi-graph-up"></i>
+                            </div>
+                        </div>
+                        <p class="mb-0">Tăng trưởng trong năm nay</p>
+                    </div>
+                </div>
+
+                <!-- Average rating -->
+                <div class="col-md-6 col-lg-4">
+                    <div class="bg-light p-4 rounded text-center h-100 d-flex flex-column justify-content-center hover-card">
+                        <h6 class="fw-normal">Đánh giá trung bình</h6>
+                        <div class="d-flex align-items-center justify-content-center">
+                            <h2 class="mb-0 me-2" th:text="${#numbers.formatDecimal(avgRating, 1, 1)}">4.0</h2>
+                            <ul class="list-inline mb-0">
+                                <li class="list-inline-item me-0" th:each="i : ${#numbers.sequence(1,5)}">
+                                    <i th:class="${i <= avgRating} ? 'fa-solid fa-star text-warning' : 'fa-solid fa-star text-secondary'"></i>
+                                </li>
+                            </ul>
+                        </div>
+                        <p class="mb-0">Đánh giá trong năm nay</p>
+                    </div>
+                </div>
+
+                <!-- Progress bars động -->
+                <div class="col-lg-4">
+                    <div class="bg-light p-4 rounded h-100 d-flex flex-column justify-content-center hover-card">
+                        <div class="row gx-3 g-0 align-items-center"
+                             th:each="count, iStat : ${ratingDistribution}"
+                             th:with="rating=${5 - iStat.index}, percent=${thisYearReviewCount > 0 ? (count * 100.0 / thisYearReviewCount) : 0}">
+                            <!-- Số sao -->
+                            <div class="col-3 col-sm-2 text-warning text-end">
+                                <small class="fw-medium" th:text="${rating} + '★'"></small>
+                            </div>
+
+                            <!-- Thanh progress -->
+                            <div class="col-7 col-sm-8">
+                                <div class="progress" style="height: 8px; background-color: #3a3a3a; border-radius: 4px;">
+                                    <div class="progress-bar"
+                                         role="progressbar"
+                                         th:style="'width:' + ${#numbers.formatDecimal(percent, 0, 'POINT', 0, 'NONE')} + '%; height: 8px; background-color: #facc15; border-radius: 4px;'"
+                                         th:attr="aria-valuenow=${count}, aria-valuemin=0, aria-valuemax=${totalReviews}">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Phần trăm -->
+                            <div class="col-2 col-sm-2 text-end">
+                                <small class="h6 fw-light mb-0"
+                                       th:text="${#numbers.formatDecimal(percent, 0, 'POINT', 0, 'NONE')} + '%'"></small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- Review box END -->
+
+            <!-- Tab and select -->
+            <div class="row g-4 justify-content-between align-items-center">
+                <div class="col-lg-5">
+                    <!-- Tabs -->
+                    <ul class="nav nav-pills-shadow nav-responsive" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <a class="nav-link mb-0 me-sm-2"
+                               th:classappend="${filter == 'all'} ? ' active'"
+                               th:href="@{/admin-review(filter='all', hotelName=${selectedHotelName})}">
+                                Tất cả
+                            </a>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <a class="nav-link mb-0 me-sm-2"
+                               th:classappend="${filter == 'published'} ? ' active'"
+                               th:href="@{/admin-review(filter='published', hotelName=${selectedHotelName})}">
+                                Công khai
+                            </a>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <a class="nav-link mb-0"
+                               th:classappend="${filter == 'deleted'} ? ' active'"
+                               th:href="@{/admin-review(filter='deleted', hotelName=${selectedHotelName})}">
+                                Đã xoá
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- Select -->
+                <div class="col-md-6 col-lg-3">
+                    <form method="get" action="/admin-review">
+                        <input type="hidden" name="filter" th:value="${filter}" />
+                        <select class="form-select js-choice" name="hotelName" onchange="this.form.submit()">
+                            <option value="">Tất cả khách sạn</option>
+                            <option th:each="hotelName : ${hotelNames}"
+                                    th:value="${hotelName}"
+                                    th:text="${hotelName}"
+                                    th:selected="${hotelName == selectedHotelName}">
+                            </option>
+                        </select>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Reviews START -->
+            <div class="vstack gap-4 mt-5">
+                <div th:each="review : ${reviewList}">
+                    <!-- Review item -->
+                    <div class="row g-3 g-lg-4 p-3 rounded hover-card"
+                         th:classappend="${review != null and !review.isPublic} ? ' bg-dark bg-opacity-10 border border-danger' : ''">
+                        <div class="col-md-4 col-xxl-3">
+                        <div class="d-flex align-items-center">
+                            <div class="avatar avatar-xl me-2 flex-shrink-0">
+                                <img class="avatar-img rounded-circle" th:src="${review.avatarUrl}" alt="avatar">
+                            </div>
+                            <div class="ms-2">
+                                <h5 class="mb-1" th:text="${review.fullName}">Tên người dùng</h5>
+                                <p class="mb-0" th:text="${#temporals.format(review.createdAt, 'dd MMM yyyy')}">Ngày comment</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-8 col-xxl-9">
+                        <ul class="list-inline mb-2">
+                            <li class="list-inline-item me-0" th:each="i : ${#numbers.sequence(1,5)}">
+                                <i th:class="${i <= review.rating} ? 'fas fa-star text-warning' : 'far fa-star text-warning'"></i>
+                            </li>
+                        </ul>
+                        <h6>
+                            <span class="text-body fw-light">Review on:</span>
+                            <span th:text="${review.hotelName}">Tên phòng</span>
+                            <span class="badge bg-danger ms-2" th:if="${!review.isPublic}">Đã xóa</span>
+                        </h6>
+                        <p th:text="${review.comment}">Nội dung đánh giá</p>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <a href="#" class="btn btn-sm btn-primary-soft mb-0">Direct message</a>
+                                <a class="btn btn-sm btn-light mb-0"
+                                   data-bs-toggle="collapse"
+                                   th:href="'#collapseComment__' + ${review.reviewId}"
+                                   role="button"
+                                   aria-expanded="false"
+                                   th:attr="aria-controls='collapseComment__' + ${review.reviewId}">
+                                    Reply
+                                </a>
+                                <a class="btn btn-sm btn-warning-soft mb-0"
+                                   th:if="${review != null and !review.isPublic}"
+                                   th:href="@{'/admin-review/restore/' + ${review.reviewId}}">
+                                    <i class="bi bi-arrow-clockwise me-1"></i>Khôi phục
+                                </a>
+                            </div>
+                            <a href="#"
+                               class="text-primary-hover"
+                               th:if="${review.isPublic}"
+                               th:attr="data-bs-toggle='modal', data-bs-target='#confirmDeleteModal__' + ${review.reviewId}">
+                                <i class="bi bi-trash3 me-1"></i>Delete
+                            </a>
+                        </div>
+                        <!-- collapse textarea -->
+                        <div class="collapse mt-3"
+                             th:id="'collapseComment__' + ${review.reviewId}">
+                            <div class="d-flex">
+                                <textarea class="form-control mb-0" placeholder="Add a comment..." rows="2" spellcheck="false"></textarea>
+                                <button class="btn btn-sm btn-primary ms-2 px-4 mb-0 flex-shrink-0">
+                                    <i class="fas fa-paper-plane fs-5"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                    <div class="modal fade" th:id="'confirmDeleteModal__' + ${review.reviewId}" tabindex="-1" aria-hidden="true">
+                        <div class="modal-dialog modal-dialog-centered">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title">Xác nhận xoá</h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button>
+                                </div>
+                                <div class="modal-body">
+                                    Bạn có chắc chắn muốn xoá đánh giá này không?
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Huỷ</button>
+                                    <a th:href="@{'/admin-review/delete/' + ${review.reviewId} + '?filter=' + ${filter} + '&page=' + ${page}}"
+                                       class="btn btn-danger">Xoá</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div> <!-- End .row -->
+                <hr class="m-0">
+            </div> <!-- End th:each -->
+
+            <!-- Review item END-->
+
+            <!-- Pagination START -->
+                <div class="row">
+                    <div class="d-sm-flex justify-content-sm-center align-items-sm-center mt-4">
+                        <nav class="mb-sm-0 d-flex justify-content-center" aria-label="navigation">
+                            <ul class="pagination pagination-sm pagination-primary-soft d-inline-block d-md-flex rounded mb-0">
+
+                                <!-- Previous -->
+                                <li th:if="${totalPages >= 2}" th:class="'page-item mb-0 hover-card' + (${page == 1} ? ' disabled' : '')">
+                                    <a class="page-link"
+                                       th:href="@{'/admin-review'(page=${page - 1}, filter=${filter}, hotelName=${selectedHotelName})}">
+                                        <i class="fa-solid fa-angle-left"></i>
+                                    </a>
+                                </li>
+
+                                <!-- Page 1 -->
+                                <li th:if="${totalPages >= 1}" th:class="'page-item mb-0 hover-card' + (${page == 1} ? ' active disabled' : '')">
+                                    <a class="page-link"
+                                       th:href="@{'/admin-review'(page=1, filter=${filter}, hotelName=${selectedHotelName})}">1</a>
+                                </li>
+
+                                <!-- Page 2 -->
+                                <li th:if="${totalPages >= 2}" th:class="'page-item mb-0 hover-card' + (${page == 2} ? ' active disabled' : '')">
+                                    <a class="page-link"
+                                       th:href="@{'/admin-review'(page=2, filter=${filter}, hotelName=${selectedHotelName})}">2</a>
+                                </li>
+
+                                <!-- Left ellipsis -->
+                                <li th:if="${totalPages >= 5 and page - 2 > 2}" class="page-item mb-0 disabled hover-card">
+                                    <a class="page-link">...</a>
+                                </li>
+
+                                <!-- Page -1 -->
+                                <li th:if="${totalPages >= 4 and page != 1 and page - 1 != 1 and page - 1 != 2}" class="page-item hover-card mb-0">
+                                    <a class="page-link"
+                                       th:href="@{'/admin-review'(page=${page - 1}, filter=${filter}, hotelName=${selectedHotelName})}"
+                                       th:text="${page - 1}"></a>
+                                </li>
+
+                                <!-- Current Page -->
+                                <li th:if="${totalPages >= 4 and page != 1 and page != 2 and page != totalPages}" class="page-item hover-card mb-0 active disabled">
+                                    <a class="page-link" th:text="${page}"></a>
+                                </li>
+
+                                <!-- Page +1 -->
+                                <li th:if="${totalPages >= 4 and page + 1 != 2 and page + 1 != totalPages and page != totalPages}" class="page-item hover-card mb-0">
+                                    <a class="page-link"
+                                       th:href="@{'/admin-review'(page=${page + 1}, filter=${filter}, hotelName=${selectedHotelName})}"
+                                       th:text="${page + 1}"></a>
+                                </li>
+
+                                <!-- Right ellipsis -->
+                                <li th:if="${totalPages >= 4 and totalPages > page + 2}" class="page-item mb-0 disabled hover-card">
+                                    <a class="page-link">...</a>
+                                </li>
+
+                                <!-- Last Page -->
+                                <li th:if="${totalPages >= 3}" th:class="'page-item mb-0 hover-card' + (${page == totalPages} ? ' active disabled' : '')">
+                                    <a class="page-link"
+                                       th:href="@{'/admin-review'(page=${totalPages}, filter=${filter}, hotelName=${selectedHotelName})}"
+                                       th:text="${totalPages}"></a>
+                                </li>
+
+                                <!-- Next -->
+                                <li th:if="${totalPages >= 2}" th:class="'page-item mb-0 hover-card' + (${page == totalPages} ? ' disabled' : '')">
+                                    <a class="page-link"
+                                       th:href="@{'/admin-review'(page=${page + 1}, filter=${filter}, hotelName=${selectedHotelName})}">
+                                        <i class="fa-solid fa-angle-right"></i>
+                                    </a>
+                                </li>
+                            </ul>
+                        </nav>
+                    </div>
+                </div>
+                <!-- Pagination END -->
+
+            </div>
+            <!-- Reviews END -->
+
+        </div>
+        <!-- Page main content END -->
+    </div>
+    <!-- Page content END -->
+
+</main>
+<!-- **************** MAIN CONTENT END **************** -->
+<script th:src="@{/assets/vendor/bootstrap/dist/js/bootstrap.bundle.min.js}"></script>
+<script th:src="@{/assets/vendor/overlay-scrollbar/js/overlayscrollbars.min.js}"></script>
+<script th:src="@{/assets/js/functions.js}"></script>
+</body>
+</html>
